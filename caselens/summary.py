@@ -60,6 +60,14 @@ def status_text(f) -> str:
     return "closed" if f["closed"] else "open, latest stage is Stage 5"
 
 
+def closed_status(row, stage5_comment) -> bool:
+    """Use the explicit Case_Status column when present. Fall back to the Stage 5 comment otherwise."""
+    status = row.get("Case_Status") if hasattr(row, "get") else None
+    if isinstance(status, str) and status.strip():
+        return status.strip().lower() == "closed"
+    return is_closed(stage5_comment)
+
+
 def is_closed(stage5_comment) -> bool:
     text = stage5_comment if isinstance(stage5_comment, str) else ""
     return bool(CLOSED_WORDS.search(text)) and not SCHEDULED.search(text)
@@ -134,7 +142,9 @@ def case_facts(df, case_id, patterns) -> dict:
         best = valid.loc[valid["Hours"].idxmax()]
         bottleneck = (int(best["Stage"]), float(best["Hours"]))
 
-    comments = {n: r[f"Stage_{n}_Comments"] for n in range(1, 6)}
+    # Blank comments (stages a case has not reached) load as NaN; treat them as empty text.
+    comments = {n: r[f"Stage_{n}_Comments"] if isinstance(r[f"Stage_{n}_Comments"], str) else ""
+                for n in range(1, 6)}
     terms: dict[str, dict] = {}
     for text in comments.values():
         for hit in find_terms(text, patterns):
@@ -144,7 +154,7 @@ def case_facts(df, case_id, patterns) -> dict:
         "case_id": case_id,
         "type": r["Specific_Type"],
         "sub_type": r["Specific_Sub_Type"],
-        "closed": is_closed(comments[5]),
+        "closed": closed_status(r, comments[5]),
         "documents": r["Documents_Attached"],
         "tat_hours": float(total_tat_hours(rows).iloc[0]),
         "bottleneck": bottleneck,
@@ -166,11 +176,16 @@ def allowed_sources(f) -> set[str]:
     return ids
 
 
+def tat_label(hours) -> str:
+    """Turnaround text. Open cases have no final turnaround."""
+    return "not final, case is open" if pd.isna(hours) else f"{hours:.1f} hours"
+
+
 def build_prompt(f) -> str:
     docs = "documents attached" if f["documents"] == "Yes" else "no documents attached"
     lines = [
         f"[M0] Case type: {f['type']}; sub-type: {f['sub_type']}; {docs}",
-        f"[M1] Total turnaround time: {f['tat_hours']:.1f} hours",
+        f"[M1] Total turnaround time: {tat_label(f['tat_hours'])}",
     ]
     if f["bottleneck"]:
         n, hours = f["bottleneck"]
@@ -189,7 +204,7 @@ def template_lines(f) -> list[str]:
     docs = "documents attached" if f["documents"] == "Yes" else "no documents attached"
     lines = [
         f"Case is a {f['type']} / {f['sub_type']} case with {docs}. [M0]",
-        f"Total turnaround time is {f['tat_hours']:.1f} hours. [M1]",
+        f"Total turnaround time is {tat_label(f['tat_hours'])}. [M1]",
     ]
     if f["stalls"]:
         lines.append(f"Stall recorded in {stall_names(f)}. The case later moved on to Stage 5. [M3]")
@@ -227,7 +242,6 @@ def fmt_date(ts) -> str:
 
 def render_card(f, lines: list[str]) -> str:
     """Case card in the agreed layout. Inline [C#] tags move to a Sources line."""
-    cites = sorted(set(CITATION.findall("\n".join(lines))))
     body = [re.sub(r"\s+", " ", CITATION.sub("", line)).strip() for line in lines]
     body = [b for b in body if b]
     events = [f"- Case Created on {fmt_date(f['timestamps'][1])}"]
@@ -243,8 +257,7 @@ def render_card(f, lines: list[str]) -> str:
         "Summary:", *body, "",
         "Key Events:", *events, "",
         "Documents:", *doc_lines(f), "",
-        "SLA:", (f"{sla}-day target" if sla is not None else "Not recorded"), "",
-        "Sources: " + (", ".join(cites) if cites else "none"),
+        "SLA:", (f"{sla}-day target" if sla is not None else "Not recorded"),
     ])
 
 

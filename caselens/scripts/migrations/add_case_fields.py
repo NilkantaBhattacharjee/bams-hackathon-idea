@@ -6,11 +6,14 @@ The script backs up the original file first and does nothing if the fields alrea
 """
 
 import shutil
+import sys
+from pathlib import Path
 
 import pandas as pd
 
-from config import CASES_CSV
-from summary import is_closed
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # project root, for config and summary
+from config import CASES_CSV  # noqa: E402
+from summary import is_closed  # noqa: E402
 
 SLA_DAYS = {
     "Mortgage_Refinance": 7,

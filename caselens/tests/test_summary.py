@@ -122,7 +122,7 @@ def test_card_has_required_sections_and_no_inline_citations(df, patterns, no_key
     result = summary.summarize_case("CS-2026-1001", df=df, patterns=patterns)
     card = summary.render_card(facts, result["lines"])
     for heading in ["Case: CS-2026-1001", "Purpose:", "Created:", "Current Stage:",
-                    "Summary:", "Key Events:", "Documents:", "SLA:", "Sources:"]:
+                    "Summary:", "Key Events:", "Documents:", "SLA:"]:
         assert heading in card, heading
     assert "01-Mar-2026" in card
     assert "7-day target" in card  # CS-2026-1001 SLA_Days = 7

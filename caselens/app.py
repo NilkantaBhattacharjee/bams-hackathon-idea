@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 
 import chat
+import guardrails
 import summary
 import trends
 from config import CASES_CSV, JARGON_JSON
@@ -24,6 +25,113 @@ def get_patterns():
 @st.cache_data
 def get_entries() -> list[dict]:
     return load_entries(JARGON_JSON)
+
+
+APP_CSS = """
+<style>
+/* Hero banner */
+.cl-hero {
+    background: linear-gradient(120deg, #6C5CE7 0%, #A29BFE 45%, #00CEC9 100%);
+    color: #FFFFFF;
+    border-radius: 16px;
+    padding: 1.1rem 1.4rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 8px 24px rgba(108, 92, 231, 0.25);
+    animation: cl-fade-in 0.6s ease-out;
+}
+.cl-hero h1 { color: #FFFFFF; margin: 0; font-size: 2.1rem; }
+.cl-hero p { margin: 0.25rem 0 0 0; opacity: 0.92; }
+
+/* Metric cards */
+[data-testid="stMetric"] {
+    background: #FFFFFF;
+    border: 1px solid #E6E8F2;
+    border-left: 5px solid #6C5CE7;
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+    box-shadow: 0 2px 8px rgba(31, 36, 48, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+[data-testid="stMetric"]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(108, 92, 231, 0.18);
+}
+[data-testid="stMetricValue"] { color: #6C5CE7; font-weight: 700; }
+
+/* Home button: larger, sits above the hero banner */
+.st-key-home_btn button {
+    font-size: 1.15rem;
+    padding: 0.65rem 1.6rem;
+    min-width: 180px;
+}
+
+/* Buttons */
+.stButton > button {
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(108, 92, 231, 0.35);
+    filter: brightness(1.05);
+}
+.stButton > button:active { transform: translateY(0); }
+
+/* Summary card (st.code block) */
+[data-testid="stCodeBlock"] {
+    border-radius: 12px;
+    border: 1px solid #E6E8F2;
+    box-shadow: 0 4px 14px rgba(31, 36, 48, 0.08);
+    animation: cl-fade-in 0.5s ease-out;
+}
+
+/* Tables and charts */
+[data-testid="stDataFrame"], [data-testid="stTable"] {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(31, 36, 48, 0.06);
+}
+
+/* Section headers */
+h2, h3 { color: #2D3436; }
+h2::after {
+    content: "";
+    display: block;
+    width: 48px;
+    height: 3px;
+    margin-top: 0.3rem;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #6C5CE7, #00CEC9);
+}
+
+/* Chat panel */
+[data-testid="stChatMessage"] {
+    border-radius: 12px;
+    background: #FFFFFF;
+    border: 1px solid #E6E8F2;
+    box-shadow: 0 2px 6px rgba(31, 36, 48, 0.05);
+    animation: cl-fade-in 0.4s ease-out;
+}
+
+/* Expanders */
+[data-testid="stExpander"] {
+    border-radius: 12px;
+    border: 1px solid #E6E8F2;
+}
+
+@keyframes cl-fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+"""
+
+
+def inject_css() -> None:
+    """Visual styling only. No data or routing changes."""
+    st.markdown(APP_CSS, unsafe_allow_html=True)
 
 
 CLEAR_KEYS = ["case_id_input", "type_input", "subtype_input"]
@@ -104,14 +212,14 @@ def single_case_page(df, patterns) -> None:
     c1, c2, c3 = st.columns(3)
     c1.metric("Type", facts["type"])
     c2.metric("Sub-type", facts["sub_type"])
-    c3.metric("Total TAT (h)", f"{facts['tat_hours']:.1f}")
+    c3.metric("Total TAT (h)", "Open" if pd.isna(facts["tat_hours"]) else f"{facts['tat_hours']:.1f}")
     st.caption(f"Status: {summary.status_text(facts)} | Documents attached: {facts['documents']}")
 
     result = summary.summarize_case(case_id, df=df, patterns=patterns, use_llm=use_llm)
     st.caption(f"Mode: {result['mode']}" + (f" ({result['model']})" if result["model"] else ""))
     if result["error"]:
         st.warning(f"Fell back to template: {result['error']}")
-    st.code(summary.render_card(facts, result["lines"]), language=None)
+    st.code(summary.render_card(facts, result["lines"]), language=None, wrap_lines=True)
 
     with st.expander("Stage comments (source data)"):
         rows = [
@@ -123,7 +231,13 @@ def single_case_page(df, patterns) -> None:
     st.subheader("Jargon explained")
     if facts["terms"]:
         st.table(pd.DataFrame([
-            {"ID": t["ID"], "Term": t["Term"], "Meaning": t["Plain_English_Explanation"]}
+            {
+                "ID": t["ID"],
+                "Term": t["Term"],
+                # Show the full form only when it adds information beyond the Term.
+                "Full form": t["Full_Form"] if t["Full_Form"] != t["Term"] else "—",
+                "Meaning": t["Plain_English_Explanation"],
+            }
             for t in facts["terms"]
         ]))
     else:
@@ -142,7 +256,7 @@ def batch_page(df, patterns) -> None:
         "Sub_type": df["Specific_Sub_Type"],
         "TAT_hours": total,
         "Stalled": [len(s) > 0 for s in stalls],
-        "Closed": [summary.is_closed(c) for c in df["Stage_5_Comments"]],
+        "Closed": [summary.closed_status(row, row["Stage_5_Comments"]) for _, row in df.iterrows()],
     })
 
     c1, c2, c3 = st.columns(3)
@@ -217,9 +331,13 @@ def chat_panel(df, patterns) -> None:
         for msg in history:
             with st.chat_message(msg["role"]):
                 for card in msg.get("cards", []):
-                    st.code(card, language=None)
+                    st.code(card, language=None, wrap_lines=True)
                 if msg.get("content"):
-                    st.markdown(msg["content"])
+                    # Code block gives a built-in copy button. Markdown is shown as plain text.
+                    if msg["role"] == "assistant":
+                        st.code(msg["content"], language=None, wrap_lines=True)
+                    else:
+                        st.markdown(msg["content"])
 
     question = box.chat_input("Ask about a case or a jargon term")
     if not question:
@@ -236,7 +354,7 @@ def chat_panel(df, patterns) -> None:
                 for cid in reply["case_ids"]:
                     facts = summary.case_facts(df, cid, patterns)
                     result = summary.summarize_case(cid, df=df, patterns=patterns, use_llm=True)
-                    cards.append(summary.render_card(facts, result["lines"]))
+                    cards.append(guardrails.redact_output(summary.render_card(facts, result["lines"])))
     history.append({"role": "user", "content": question})
     history.append({"role": "assistant", "content": reply["text"], "cards": cards,
                     "case_ids": reply.get("case_ids", [])})
@@ -245,28 +363,35 @@ def chat_panel(df, patterns) -> None:
 
 def landing(df, patterns) -> None:
     st.header("Choose an option")
+    st.caption("Pick a view to start. Cases and jargon are read from the CSV and dictionary.")
     c1, c2 = st.columns(2)
-    if c1.button("Single Case Summarization", use_container_width=True):
+    if c1.button("🔍 Single Case Summarization", use_container_width=True, type="primary"):
         st.session_state["mode"] = "single"
         st.rerun()
-    if c2.button("Bulk Case Summarization", use_container_width=True):
+    if c2.button("📊 Bulk Case Summarization", use_container_width=True, type="primary"):
         st.session_state["mode"] = "bulk"
         st.rerun()
 
 
 def main() -> None:
     st.set_page_config(page_title="CaseLens", layout="wide", initial_sidebar_state="collapsed")
+    inject_css()
     df = get_cases()
     patterns = get_patterns()
     mode = st.session_state.get("mode")
 
     left, right = st.columns([2, 1.3], gap="medium")
     with left:
-        head1, head2 = st.columns([1, 5])
-        if mode and head1.button("Home"):
-            st.session_state["mode"] = None
-            st.rerun()
-        head2.title("CaseLens")
+        if mode:
+            with st.container(key="home_btn"):
+                if st.button("⬅ Home", type="primary"):
+                    st.session_state["mode"] = None
+                    st.rerun()
+        st.markdown(
+            '<div class="cl-hero"><h1>CaseLens</h1>'
+            "<p>Plain-English case intelligence for BPM operations</p></div>",
+            unsafe_allow_html=True,
+        )
         if mode == "single":
             single_case_page(df, patterns)
         elif mode == "bulk":

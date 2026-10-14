@@ -6,6 +6,8 @@ documents attached and their status, SLA target, and the stall history.
 
 import re
 
+import pandas as pd
+
 import summary
 from metrics import total_tat_hours
 
@@ -32,7 +34,10 @@ def stage_entry_text(df, cid: str, n: int) -> str:
 
 
 CASE_PLURAL = re.compile(r"\b(cases|case ids?|caseids?|case-ids?)\b", re.IGNORECASE)
-LIST_WORD = re.compile(r"\b(list|which|mention|show|few|some|all|name|give me|tell me)\b", re.IGNORECASE)
+LIST_WORD = re.compile(
+    r"\b(list|which|mention|show|few|some|all|name|give me|tell me|how many|count|number of)\b",
+    re.IGNORECASE,
+)
 STALL_LIST = re.compile(r"\b(stall|stalls|stalled|delay|delayed|stuck|on hold)\b", re.IGNORECASE)
 OPEN_WORD = re.compile(r"\b(still|open|ongoing|pending|unresolved|not closed)\b", re.IGNORECASE)
 CLOSED_WORD = re.compile(r"\b(closed|resolved|completed|finished)\b", re.IGNORECASE)
@@ -105,10 +110,138 @@ def documents_text(f) -> str:
     return "Documents attached:\n" + "\n".join(f"- {line}" for line in lines)
 
 
+NEED_Q = re.compile(
+    r"\b(needed|needs?|require[sd]?|requirements?|proceed|provide|outstanding|next step|next action|"
+    r"to close|closure)\b",
+    re.I,
+)
+EXTRA_DOC_Q = re.compile(
+    r"\b(additional|more|extra|missing|further|pending)\b.*\bdocuments?\b"
+    r"|\bdocuments?\b.*\b(additional|more|extra|missing|pending|required|needed)\b",
+    re.I,
+)
+LONG_Q = re.compile(
+    r"\b(long|slow|took|taken|takes|take)\b"
+    r"|\bwhy\b.*\b(close|closed|closure|complete|completed|finish|finished)\b",
+    re.I,
+)
+
+
+def doc_items(f) -> list[tuple[str, str]]:
+    """(document name, Validated or Pending) pairs from Document_Details."""
+    out = []
+    for item in f["doc_details"].split("|"):
+        if ":" in item:
+            name, status = item.rsplit(":", 1)
+            out.append((name.strip(), status.strip()))
+    return out
+
+
+def current_stage(f) -> int:
+    """Latest stage with a comment."""
+    filled = [n for n in range(1, 6) if f["comments"][n].strip()]
+    return max(filled) if filled else 1
+
+
+def pending_docs_text(f) -> str:
+    if f["documents"] != "Yes" or not doc_items(f):
+        return "No additional documents are required for this case."
+    pending = [name for name, status in doc_items(f) if status == "Pending"]
+    if pending:
+        return "Additional documents still pending: " + ", ".join(pending) + "."
+    return "No additional documents are required. All recorded documents are validated."
+
+
+def client_needs_text(f) -> str:
+    if f["closed"]:
+        return "This case is closed. No action is needed from the client."
+    stage = current_stage(f)
+    lines = [f"The case is open at Stage {stage} ({summary.STAGE_NAMES[stage]})."]
+    pending = [name for name, status in doc_items(f) if status == "Pending"]
+    if pending:
+        lines.append("Documents still needed from the client: " + ", ".join(pending) + ".")
+    else:
+        lines.append("No pending documents are recorded for the client.")
+    latest = summary.mask(f["comments"][stage]).strip()
+    if latest:
+        lines.append(f"Latest update: {latest}")
+    return "\n\n".join(lines)
+
+
+def duration_text(f) -> str:
+    if pd.isna(f["tat_hours"]):
+        lines = ["Total turnaround is not final, because the case is still open."]
+    else:
+        lines = [f"Total turnaround: {hours_text(f['tat_hours'])}."]
+    if f["bottleneck"]:
+        n, hours = f["bottleneck"]
+        lines.append(f"Longest stage: Stage {n} ({summary.STAGE_NAMES[n]}), {hours_text(hours)}.")
+    if f["stalls"]:
+        names = " and ".join(f"Stage {n} ({summary.STAGE_NAMES[n]})" for n in f["stalls"])
+        lines.append(f"Stall recorded in {names}. The case later moved on.")
+    else:
+        lines.append("No stall was recorded for this case.")
+    if not f["closed"]:
+        lines.append("The case is still open, so it has not closed yet.")
+    return "\n\n".join(lines)
+
+
+REASON_OPEN_Q = re.compile(
+    r"\b(reason|why)\b.*\b(open|pending|still|not closed|stalled)\b"
+    r"|\b(open|pending)\b.*\b(reason|why)\b",
+    re.I,
+)
+
+
+def open_reason_text(f) -> str:
+    """Short, specific reason a case is open. No full summary."""
+    if f["closed"]:
+        return f"{f['case_id']} is closed, so it is not open."
+    stage = current_stage(f)
+    lines = [
+        f"{f['case_id']} is open because it has not reached a final outcome. "
+        f"Latest stage: Stage {stage} ({summary.STAGE_NAMES[stage]})."
+    ]
+    latest = summary.mask(f["comments"][stage]).strip()
+    if latest:
+        lines.append(f"Latest update: {latest}")
+    pending = [name for name, status in doc_items(f) if status == "Pending"]
+    if pending:
+        lines.append("Documents still pending: " + ", ".join(pending) + ".")
+    return "\n\n".join(lines)
+
+
+RANK_Q = re.compile(r"\b(longest|slowest|most time|highest|maximum|max)\b", re.I)
+CASE_WORD = re.compile(r"\bcases?\b", re.I)
+
+
+def ranking_text(df, patterns, n: int = 5) -> str:
+    """Closed cases ranked by total turnaround, longest first. Open cases have no final turnaround."""
+    rows = []
+    for cid in df["Case_ID"]:
+        f = summary.case_facts(df, cid, patterns)
+        if f["closed"] and not pd.isna(f["tat_hours"]):
+            rows.append(f)
+    rows.sort(key=lambda f: f["tat_hours"], reverse=True)
+    lines = [f"Closed cases with the longest turnaround (top {min(n, len(rows))}):"]
+    for f in rows[:n]:
+        ctype = f["type"].replace("_", " ")
+        sub = f["sub_type"].replace("_", " ")
+        lines.append(f"- {f['case_id']} | {ctype} / {sub} | {hours_text(f['tat_hours'])}")
+    return "\n".join(lines)
+
+
 def answer_facts(question: str, cid: str, df, patterns) -> str | None:
     """Return an exact answer for a factual question about one case, or None if not a factual question."""
     f = summary.case_facts(df, cid, patterns)
     q = question.lower()
+    if EXTRA_DOC_Q.search(q) or (NEED_Q.search(q) and DOC_Q.search(q)):
+        return pending_docs_text(f)
+    if NEED_Q.search(q):
+        return client_needs_text(f)
+    has_stage_ref = bool(re.search(r"\bstage\s*[1-5]\b|\b(first|second|third|fourth|fifth)\b", q))
+    if LONG_Q.search(q) and not has_stage_ref:
+        return duration_text(f)
     parts = []
 
     stage_match = None

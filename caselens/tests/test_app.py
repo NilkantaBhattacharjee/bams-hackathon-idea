@@ -9,7 +9,9 @@ def test_bulk_chart_data_matches_table_totals():
     bn = bottleneck_per_case(df)
     counts = bn.groupby("Stage").size()
     assert int(counts.sum()) == len(bn)
-    assert len(bn) == df["Case_ID"].nunique()
+    # Open cases that stopped at Stage 1 have no stage duration, so only cases that reached Stage 2 count.
+    reached_stage_2 = df["Stage_2_Timestamp"].notna()
+    assert len(bn) == int(reached_stage_2.sum())
     assert isinstance(pd.Series(counts), pd.Series)
 
 

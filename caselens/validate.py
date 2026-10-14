@@ -45,6 +45,34 @@ def find_issues(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(issues, columns=["Case_ID", "Check", "Detail"])
 
 
+VALID_PRIORITIES = {"P1", "P2"}
+
+
+def find_governance_issues(df: pd.DataFrame) -> pd.DataFrame:
+    """Checks on the added client, priority and status fields. Returns Case_ID, Check, Detail."""
+    issues = []
+
+    if "Client_Email" in df.columns:
+        emails = df["Client_Email"].astype(str).str.strip().str.lower()
+        dupes = df.loc[emails.duplicated(keep=False) & (emails != ""), "Case_ID"]
+        for cid in dupes:
+            issues.append((cid, "duplicate_email", "Client_Email is shared with another case"))
+
+    if "Priority" in df.columns:
+        for cid in df.loc[~df["Priority"].isin(VALID_PRIORITIES), "Case_ID"]:
+            issues.append((cid, "missing_priority", "Priority is not P1 or P2"))
+
+    if "Case_Status" in df.columns:
+        has_stage5 = df["Stage_5_Timestamp"].notna()
+        is_open = df["Case_Status"].str.strip().str.lower() == "open"
+        for cid in df.loc[is_open & has_stage5, "Case_ID"]:
+            issues.append((cid, "open_with_stage5", "Case is Open but has a Stage 5 timestamp"))
+        for cid in df.loc[~is_open & ~has_stage5, "Case_ID"]:
+            issues.append((cid, "closed_without_stage5", "Case is Closed but has no Stage 5 timestamp"))
+
+    return pd.DataFrame(issues, columns=["Case_ID", "Check", "Detail"])
+
+
 def load_terms(path=JARGON_JSON) -> set[str]:
     """Upper-cased dictionary terms."""
     entries = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -104,7 +132,7 @@ def write_report(df: pd.DataFrame, issues: pd.DataFrame, unmatched: pd.DataFrame
 
 def main() -> None:
     df = load_cases(CASES_CSV)
-    issues = find_issues(df)
+    issues = pd.concat([find_issues(df), find_governance_issues(df)], ignore_index=True)
     unmatched = term_coverage(df, load_terms(JARGON_JSON))
     write_report(df, issues, unmatched)
     print(f"Cases: {len(df)}  Issues: {len(issues)}  Unmatched tokens: {len(unmatched)}")

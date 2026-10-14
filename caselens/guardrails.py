@@ -51,13 +51,21 @@ def masked_ok(text: str) -> bool:
     return not leaks(text) and not injection_hits(text)
 
 
+def redact_output(text: str) -> str:
+    """Final safety net for text shown in the chat: masks emails, phones, account and client numbers."""
+    out = text or ""
+    for pattern, token in MASKS:
+        out = pattern.sub(token, out)
+    return out
+
+
 def prompt_hash(messages: list[dict]) -> str:
     blob = json.dumps(messages, sort_keys=True, ensure_ascii=False).encode("utf-8")
     return hashlib.sha256(blob).hexdigest()
 
 
 def audit(kind: str, *, case_ids=None, masked_prompt_hash="", model="", citations=None,
-          dropped=0, error="", path: Path | None = None) -> None:
+          dropped=0, error="", path: Path | None = None, latency_ms=None, tokens=None) -> None:
     """Append one line to the audit log. Stores hashes and IDs only, never the raw question or key."""
     path = Path(path or LOG_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -71,6 +79,8 @@ def audit(kind: str, *, case_ids=None, masked_prompt_hash="", model="", citation
         "citations": sorted(set(citations or [])),
         "dropped_lines": dropped,
         "error": error,
+        "latency_ms": latency_ms,
+        "total_tokens": tokens,
     }
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
