@@ -1,0 +1,279 @@
+13:02:26 | INFO  | route        q#0aad7da7 len=3 -> text cases=[]
+13:02:26 | INFO  | route        q#3ac31d30 len=501 -> text cases=[]
+13:02:26 | INFO  | route        q#9df5b86f len=53 -> text cases=[]
+13:02:26 | INFO  | route        q#9dbb6ff3 len=23 -> cases cases=['CS-2026-1001']
+13:02:26 | INFO  | route        q#96263222 len=17 -> cases cases=['CS-2026-1001']
+13:02:26 | INFO  | route        q#45e1777b len=88 -> cases cases=['CS-2026-1001', 'CS-2026-1002', 'CS-2026-1003', 'CS-2026-1004', 'CS-2026-1005']
+13:02:26 | INFO  | route        q#faf27b81 len=23 -> text cases=[]
+13:02:26 | INFO  | route        q#a665a459 len=3 -> text cases=[]
+13:02:26 | INFO  | route        q#34f2e280 len=14 -> text cases=[]
+13:02:26 | INFO  | route        q#ca35b917 len=12 -> text cases=[]
+13:02:26 | INFO  | guardrail    masking check passed, prompt sha256=9db1bd33c6bd
+13:02:26 | INFO  | model        calling m (prompt version chat-v2)
+13:02:26 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:02:26 | INFO  | route        q#ca35b917 len=12 -> text cases=[]
+13:02:27 | INFO  | retrieval    semantic glossary matches=none
+13:02:27 | INFO  | guardrail    masking check passed, prompt sha256=6d852f311d83
+13:02:27 | INFO  | model        calling m (prompt version chat-v2)
+13:02:27 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:02:27 | INFO  | route        q#00355ccf len=29 -> text cases=[]
+13:02:27 | INFO  | route        q#8bec4fd8 len=27 -> text cases=[]
+13:02:27 | INFO  | route        q#4e32559a len=31 -> text cases=[]
+13:02:27 | INFO  | route        q#41264757 len=27 -> text cases=[]
+13:02:27 | INFO  | route        q#a807e541 len=13 -> text cases=[]
+13:02:27 | INFO  | route        q#5c4fde3d len=43 -> text cases=[]
+13:02:27 | INFO  | route        q#ec5a3398 len=41 -> text cases=[]
+13:02:27 | INFO  | route        q#b0278824 len=44 -> text cases=[]
+13:02:28 | INFO  | route        q#4b599e3d len=50 -> text cases=[]
+13:02:28 | INFO  | route        q#c846bbbe len=32 -> text cases=[]
+13:02:29 | INFO  | route        q#6f777fd2 len=15 -> text cases=[]
+13:02:29 | INFO  | route        q#1287294a len=15 -> text cases=[]
+13:02:29 | INFO  | retrieval    semantic glossary matches=none
+13:02:29 | INFO  | route        q#bcc44aaa len=16 -> text cases=[]
+13:02:29 | INFO  | retrieval    semantic glossary matches=none
+13:02:29 | INFO  | guardrail    masking check passed, prompt sha256=7c9f4b4071ac
+13:02:29 | INFO  | model        calling m (prompt version chat-v2)
+13:02:29 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:02:29 | INFO  | route        q#bcc44aaa len=16 -> text cases=[]
+13:02:29 | INFO  | retrieval    semantic glossary matches=['JD-007', 'JD-014', 'JD-019']
+13:02:29 | INFO  | guardrail    masking check passed, prompt sha256=106b0aa90dbe
+13:02:29 | INFO  | model        calling m (prompt version chat-v2)
+13:02:29 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:02:29 | INFO  | route        q#38c5de84 len=22 -> text cases=[]
+13:02:29 | INFO  | retrieval    semantic glossary matches=none
+13:02:29 | INFO  | guardrail    masking check passed, prompt sha256=f581735a4427
+13:02:29 | INFO  | model        calling m (prompt version chat-v2)
+13:02:29 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:02:29 | INFO  | route        q#7e21414f len=34 -> text cases=[]
+13:02:29 | INFO  | retrieval    semantic glossary matches=['JD-007', 'JD-014', 'JD-019']
+13:02:29 | INFO  | guardrail    masking check passed, prompt sha256=106b0aa90dbe
+13:02:29 | INFO  | model        calling m (prompt version chat-v2)
+13:02:29 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:02:29 | INFO  | route        q#38c5de84 len=22 -> text cases=[]
+13:02:29 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:02:29 | INFO  | route        q#c8c070f1 len=53 -> text cases=[]
+13:02:29 | INFO  | retrieval    semantic glossary matches=['JD-007', 'JD-014', 'JD-019']
+13:02:29 | INFO  | guardrail    masking check passed, prompt sha256=106b0aa90dbe
+13:02:29 | INFO  | model        calling m (prompt version chat-v2)
+13:02:29 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:02:29 | INFO  | route        q#38c5de84 len=22 -> text cases=[]
+13:02:34 | INFO  | demo         logging check
+13:04:24 | INFO  | route        q#cbc8461b len=53 -> text cases=[]
+13:04:24 | INFO  | route        q#3ac31d30 len=501 -> text cases=[]
+13:04:24 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:04:24 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:04:24 | INFO  | route        q#8db983ff len=36 -> text cases=[]
+13:04:24 | INFO  | guardrail    masking check passed, prompt sha256=0d794877fee1
+13:04:24 | INFO  | model        calling demo (prompt version chat-v2)
+13:04:24 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:04:45 | INFO  | retrieval    semantic glossary matches=none
+13:04:45 | INFO  | guardrail    masking check passed, prompt sha256=1e3594dd33ac
+13:04:45 | INFO  | model        calling demo (prompt version chat-v2)
+13:04:45 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:04:45 | INFO  | route        q#8960702e len=22 -> text cases=[]
+13:05:06 | INFO  | route        q#cbc8461b len=53 -> text cases=[]
+13:05:06 | INFO  | route        q#3ac31d30 len=501 -> text cases=[]
+13:05:06 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:05:06 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:05:06 | INFO  | guardrail    masking check passed, prompt sha256=0d794877fee1
+13:05:06 | INFO  | model        calling demo (prompt version chat-v2)
+13:05:06 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:05:24 | INFO  | retrieval    semantic glossary matches=none
+13:05:24 | INFO  | guardrail    masking check passed, prompt sha256=1e3594dd33ac
+13:05:24 | INFO  | model        calling demo (prompt version chat-v2)
+13:05:24 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:05:24 | INFO  | route        q#8960702e len=22 -> text cases=[]
+13:05:46 | INFO  | route        q#0aad7da7 len=3 -> text cases=[]
+13:05:46 | INFO  | route        q#3ac31d30 len=501 -> text cases=[]
+13:05:46 | INFO  | route        q#9df5b86f len=53 -> text cases=[]
+13:05:46 | INFO  | route        q#9dbb6ff3 len=23 -> cases cases=['CS-2026-1001']
+13:05:46 | INFO  | route        q#96263222 len=17 -> cases cases=['CS-2026-1001']
+13:05:46 | INFO  | route        q#45e1777b len=88 -> cases cases=['CS-2026-1001', 'CS-2026-1002', 'CS-2026-1003', 'CS-2026-1004', 'CS-2026-1005']
+13:05:46 | INFO  | route        q#faf27b81 len=23 -> text cases=[]
+13:05:46 | INFO  | route        q#a665a459 len=3 -> text cases=[]
+13:05:46 | INFO  | route        q#34f2e280 len=14 -> text cases=[]
+13:05:46 | INFO  | route        q#ca35b917 len=12 -> text cases=[]
+13:05:47 | INFO  | guardrail    masking check passed, prompt sha256=9db1bd33c6bd
+13:05:47 | INFO  | model        calling m (prompt version chat-v2)
+13:05:47 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:05:47 | INFO  | route        q#ca35b917 len=12 -> text cases=[]
+13:05:47 | INFO  | retrieval    semantic glossary matches=none
+13:05:47 | INFO  | guardrail    masking check passed, prompt sha256=6d852f311d83
+13:05:47 | INFO  | model        calling m (prompt version chat-v2)
+13:05:47 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:05:47 | INFO  | route        q#00355ccf len=29 -> text cases=[]
+13:05:47 | INFO  | route        q#8bec4fd8 len=27 -> text cases=[]
+13:05:47 | INFO  | route        q#4e32559a len=31 -> text cases=[]
+13:05:47 | INFO  | route        q#41264757 len=27 -> text cases=[]
+13:05:47 | INFO  | route        q#a807e541 len=13 -> text cases=[]
+13:05:47 | INFO  | route        q#5c4fde3d len=43 -> text cases=[]
+13:05:47 | INFO  | route        q#ec5a3398 len=41 -> text cases=[]
+13:05:47 | INFO  | route        q#b0278824 len=44 -> text cases=[]
+13:05:48 | INFO  | route        q#4b599e3d len=50 -> text cases=[]
+13:05:48 | INFO  | route        q#c846bbbe len=32 -> text cases=[]
+13:05:49 | INFO  | route        q#6f777fd2 len=15 -> text cases=[]
+13:05:49 | INFO  | route        q#1287294a len=15 -> text cases=[]
+13:05:49 | INFO  | retrieval    semantic glossary matches=none
+13:05:49 | INFO  | route        q#bcc44aaa len=16 -> text cases=[]
+13:05:49 | INFO  | retrieval    semantic glossary matches=none
+13:05:49 | INFO  | guardrail    masking check passed, prompt sha256=7c9f4b4071ac
+13:05:49 | INFO  | model        calling m (prompt version chat-v2)
+13:05:49 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:05:49 | INFO  | route        q#bcc44aaa len=16 -> text cases=[]
+13:05:49 | INFO  | retrieval    semantic glossary matches=['JD-007', 'JD-014', 'JD-019']
+13:05:49 | INFO  | guardrail    masking check passed, prompt sha256=106b0aa90dbe
+13:05:49 | INFO  | model        calling m (prompt version chat-v2)
+13:05:49 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:05:49 | INFO  | route        q#38c5de84 len=22 -> text cases=[]
+13:05:49 | INFO  | retrieval    semantic glossary matches=none
+13:05:49 | INFO  | guardrail    masking check passed, prompt sha256=f581735a4427
+13:05:49 | INFO  | model        calling m (prompt version chat-v2)
+13:05:49 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:05:49 | INFO  | route        q#7e21414f len=34 -> text cases=[]
+13:05:49 | INFO  | retrieval    semantic glossary matches=['JD-007', 'JD-014', 'JD-019']
+13:05:49 | INFO  | guardrail    masking check passed, prompt sha256=106b0aa90dbe
+13:05:49 | INFO  | model        calling m (prompt version chat-v2)
+13:05:49 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:05:49 | INFO  | route        q#38c5de84 len=22 -> text cases=[]
+13:05:49 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:05:49 | INFO  | route        q#c8c070f1 len=53 -> text cases=[]
+13:05:49 | INFO  | retrieval    semantic glossary matches=['JD-007', 'JD-014', 'JD-019']
+13:05:49 | INFO  | guardrail    masking check passed, prompt sha256=106b0aa90dbe
+13:05:49 | INFO  | model        calling m (prompt version chat-v2)
+13:05:49 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:05:49 | INFO  | route        q#38c5de84 len=22 -> text cases=[]
+13:06:02 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:06:10 | INFO  | route        q#cbc8461b len=53 -> text cases=[]
+13:06:10 | INFO  | route        q#3ac31d30 len=501 -> text cases=[]
+13:06:10 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:06:10 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:06:10 | INFO  | route        q#8db983ff len=36 -> text cases=[]
+13:06:10 | INFO  | guardrail    masking check passed, prompt sha256=0d794877fee1
+13:06:10 | INFO  | model        calling demo (prompt version chat-v2)
+13:06:10 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:06:26 | INFO  | retrieval    semantic glossary matches=none
+13:06:26 | INFO  | guardrail    masking check passed, prompt sha256=1e3594dd33ac
+13:06:26 | INFO  | model        calling demo (prompt version chat-v2)
+13:06:26 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:06:26 | INFO  | route        q#8960702e len=22 -> text cases=[]
+13:06:34 | INFO  | guardrail    masking check passed, prompt sha256=5608182dbb25
+13:06:34 | INFO  | model        calling m (prompt version chat-v2)
+13:06:34 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:06:34 | INFO  | route        q#8db983ff len=36 -> text cases=[]
+13:06:49 | INFO  | route        q#cbc8461b len=53 -> text cases=[]
+13:06:49 | INFO  | route        q#3ac31d30 len=501 -> text cases=[]
+13:06:49 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:06:49 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:06:49 | INFO  | route        q#8db983ff len=36 -> text cases=[]
+13:06:49 | INFO  | guardrail    masking check passed, prompt sha256=0d794877fee1
+13:06:49 | INFO  | model        calling demo (prompt version chat-v2)
+13:06:49 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:07:07 | INFO  | retrieval    semantic glossary matches=none
+13:07:07 | INFO  | guardrail    masking check passed, prompt sha256=1e3594dd33ac
+13:07:07 | INFO  | model        calling demo (prompt version chat-v2)
+13:07:07 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:07:07 | INFO  | route        q#8960702e len=22 -> text cases=[]
+13:07:16 | INFO  | guardrail    masking check passed, prompt sha256=5608182dbb25
+13:07:16 | INFO  | model        calling demo (prompt version chat-v2)
+13:07:16 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:07:16 | INFO  | route        q#8db983ff len=36 -> text cases=[]
+13:07:32 | INFO  | route        q#cbc8461b len=53 -> text cases=[]
+13:07:32 | INFO  | route        q#3ac31d30 len=501 -> text cases=[]
+13:07:32 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:07:32 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:07:32 | INFO  | route        q#8db983ff len=36 -> text cases=[]
+13:07:32 | INFO  | guardrail    masking check passed, prompt sha256=0d794877fee1
+13:07:32 | INFO  | model        calling demo (prompt version chat-v2)
+13:07:32 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:07:49 | INFO  | retrieval    semantic glossary matches=none
+13:07:49 | INFO  | guardrail    masking check passed, prompt sha256=1e3594dd33ac
+13:07:49 | INFO  | model        calling demo (prompt version chat-v2)
+13:07:49 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:07:49 | INFO  | route        q#8960702e len=22 -> text cases=[]
+13:08:00 | INFO  | route        q#cbc8461b len=53 -> text cases=[]
+13:08:00 | INFO  | route        q#3ac31d30 len=501 -> text cases=[]
+13:08:00 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:08:00 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:08:00 | INFO  | route        q#8db983ff len=36 -> text cases=[]
+13:08:00 | INFO  | guardrail    masking check passed, prompt sha256=0d794877fee1
+13:08:00 | INFO  | model        calling demo (prompt version chat-v2)
+13:08:00 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:08:17 | INFO  | retrieval    semantic glossary matches=none
+13:08:17 | INFO  | guardrail    masking check passed, prompt sha256=1e3594dd33ac
+13:08:17 | INFO  | model        calling demo (prompt version chat-v2)
+13:08:17 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:08:17 | INFO  | route        q#8960702e len=22 -> text cases=[]
+13:11:33 | INFO  | route        q#0aad7da7 len=3 -> text cases=[]
+13:11:33 | INFO  | route        q#3ac31d30 len=501 -> text cases=[]
+13:11:33 | INFO  | route        q#9df5b86f len=53 -> text cases=[]
+13:11:33 | INFO  | route        q#9dbb6ff3 len=23 -> cases cases=['CS-2026-1001']
+13:11:33 | INFO  | route        q#96263222 len=17 -> cases cases=['CS-2026-1001']
+13:11:33 | INFO  | route        q#45e1777b len=88 -> cases cases=['CS-2026-1001', 'CS-2026-1002', 'CS-2026-1003', 'CS-2026-1004', 'CS-2026-1005']
+13:11:33 | INFO  | route        q#faf27b81 len=23 -> text cases=[]
+13:11:33 | INFO  | route        q#a665a459 len=3 -> text cases=[]
+13:11:33 | INFO  | route        q#34f2e280 len=14 -> text cases=[]
+13:11:33 | INFO  | route        q#ca35b917 len=12 -> text cases=[]
+13:11:33 | INFO  | guardrail    masking check passed, prompt sha256=9db1bd33c6bd
+13:11:33 | INFO  | model        calling m (prompt version chat-v2)
+13:11:33 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:11:33 | INFO  | route        q#ca35b917 len=12 -> text cases=[]
+13:11:33 | INFO  | retrieval    semantic glossary matches=none
+13:11:33 | INFO  | guardrail    masking check passed, prompt sha256=6d852f311d83
+13:11:33 | INFO  | model        calling m (prompt version chat-v2)
+13:11:33 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:11:33 | INFO  | route        q#00355ccf len=29 -> text cases=[]
+13:11:33 | INFO  | route        q#8bec4fd8 len=27 -> text cases=[]
+13:11:33 | INFO  | route        q#4e32559a len=31 -> text cases=[]
+13:11:33 | INFO  | route        q#41264757 len=27 -> text cases=[]
+13:11:33 | INFO  | route        q#a807e541 len=13 -> text cases=[]
+13:11:33 | INFO  | route        q#5c4fde3d len=43 -> text cases=[]
+13:11:34 | INFO  | route        q#ec5a3398 len=41 -> text cases=[]
+13:11:34 | INFO  | route        q#b0278824 len=44 -> text cases=[]
+13:11:34 | INFO  | route        q#4b599e3d len=50 -> text cases=[]
+13:11:35 | INFO  | route        q#c846bbbe len=32 -> text cases=[]
+13:11:35 | INFO  | route        q#6f777fd2 len=15 -> text cases=[]
+13:11:35 | INFO  | route        q#1287294a len=15 -> text cases=[]
+13:11:35 | INFO  | retrieval    semantic glossary matches=none
+13:11:35 | INFO  | route        q#bcc44aaa len=16 -> text cases=[]
+13:11:36 | INFO  | retrieval    semantic glossary matches=none
+13:11:36 | INFO  | guardrail    masking check passed, prompt sha256=7c9f4b4071ac
+13:11:36 | INFO  | model        calling m (prompt version chat-v2)
+13:11:36 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:11:36 | INFO  | route        q#bcc44aaa len=16 -> text cases=[]
+13:11:36 | INFO  | retrieval    semantic glossary matches=['JD-007', 'JD-014', 'JD-019']
+13:11:36 | INFO  | guardrail    masking check passed, prompt sha256=106b0aa90dbe
+13:11:36 | INFO  | model        calling m (prompt version chat-v2)
+13:11:36 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:11:36 | INFO  | route        q#38c5de84 len=22 -> text cases=[]
+13:11:36 | INFO  | retrieval    semantic glossary matches=none
+13:11:36 | INFO  | guardrail    masking check passed, prompt sha256=f581735a4427
+13:11:36 | INFO  | model        calling m (prompt version chat-v2)
+13:11:36 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:11:36 | INFO  | route        q#7e21414f len=34 -> text cases=[]
+13:11:36 | INFO  | retrieval    semantic glossary matches=['JD-007', 'JD-014', 'JD-019']
+13:11:36 | INFO  | guardrail    masking check passed, prompt sha256=106b0aa90dbe
+13:11:36 | INFO  | model        calling m (prompt version chat-v2)
+13:11:36 | INFO  | citations    kept=0 dropped=1 (every kept line cites a valid source)
+13:11:36 | INFO  | route        q#38c5de84 len=22 -> text cases=[]
+13:11:36 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:11:36 | INFO  | route        q#c8c070f1 len=53 -> text cases=[]
+13:11:36 | INFO  | retrieval    semantic glossary matches=['JD-007', 'JD-014', 'JD-019']
+13:11:36 | INFO  | guardrail    masking check passed, prompt sha256=106b0aa90dbe
+13:11:36 | INFO  | model        calling m (prompt version chat-v2)
+13:11:36 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:11:36 | INFO  | route        q#38c5de84 len=22 -> text cases=[]
+13:13:18 | INFO  | route        q#dccedced len=12 -> cases cases=['CS-2026-1001']
+13:13:36 | INFO  | route        q#4ab97d89 len=11 -> text cases=[]
+13:14:57 | INFO  | guardrail    masking check passed, prompt sha256=a8146a1b16be
+13:14:57 | INFO  | model        calling openai/gpt-4o-mini (prompt version chat-v2)
+13:15:00 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:15:00 | INFO  | route        q#aa3ed56d len=38 -> text cases=[]
+13:15:45 | INFO  | retrieval    semantic glossary matches=none
+13:15:45 | INFO  | guardrail    BLOCKED: raw identifier or override phrase found, model not called
+13:15:45 | INFO  | route        q#515f9d69 len=23 -> text cases=[]
+13:16:37 | INFO  | route        q#f5bca93e len=26 -> text cases=[]
+13:49:02 | INFO  | guardrail    masking check passed, prompt sha256=ed54138a05f9
+13:49:02 | INFO  | model        calling openai/gpt-4o-mini (prompt version chat-v2)
+13:49:05 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
+13:49:05 | INFO  | route        q#ebdd1418 len=11 -> text cases=[]
+13:49:37 | INFO  | route        q#463b3761 len=43 -> text cases=[]

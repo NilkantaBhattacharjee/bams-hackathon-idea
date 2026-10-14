@@ -1,0 +1,418 @@
+[
+  {
+    "ID": "JD-001",
+    "Term": "IB",
+    "Category": "Channel",
+    "Full_Form": "Internet Banking",
+    "Plain_English_Explanation": "The customer initiated or interacted with the case digitally through the bank's online web/mobile portal.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-002",
+    "Term": "P1",
+    "Category": "Priority",
+    "Full_Form": "Priority Level 1 (High)",
+    "Plain_English_Explanation": "Service Level Agreement (SLA) urgency tier demanding immediate escalation and fast-tracking.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-003",
+    "Term": "P2",
+    "Category": "Priority",
+    "Full_Form": "Priority Level 2 (Standard)",
+    "Plain_English_Explanation": "Service Level Agreement (SLA) urgency tier following standard operational queues.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-004",
+    "Term": "KYC",
+    "Category": "Compliance",
+    "Full_Form": "Know Your Customer",
+    "Plain_English_Explanation": "Mandatory identity verification process to confirm the client's legal identity, address, and background.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-005",
+    "Term": "PEP",
+    "Category": "Compliance",
+    "Full_Form": "Politically Exposed Person",
+    "Plain_English_Explanation": "Global compliance screening check to ensure the client is not a high-risk political figure.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-006",
+    "Term": "SAN",
+    "Category": "Compliance",
+    "Full_Form": "Sanctions List Screening",
+    "Plain_English_Explanation": "Global compliance screening check to ensure the client is not on international trade or terrorism sanction lists.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-007",
+    "Term": "LTV",
+    "Category": "Underwriting",
+    "Full_Form": "Loan-to-Value Ratio",
+    "Plain_English_Explanation": "The ratio of the loan amount compared to the appraised value of the collateral. Higher LTV increases credit risk.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-008",
+    "Term": "CC",
+    "Category": "Governance",
+    "Full_Form": "Credit Committee",
+    "Plain_English_Explanation": "A governing body of senior risk officers required to review and approve loans exceeding standard underwriting authority matrices. Not related to credit cards.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-009",
+    "Term": "DTI",
+    "Category": "Underwriting",
+    "Full_Form": "Debt-to-Income Ratio",
+    "Plain_English_Explanation": "The percentage of a client's monthly gross income that goes toward paying debts. High DTI signals repayment stress.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-010",
+    "Term": "LOA",
+    "Category": "Governance",
+    "Full_Form": "Level of Authority",
+    "Plain_English_Explanation": "The approval tier that limits how much a signer can authorize. Case comments such as 'LOA Level 3' name the tier of the approving officer.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-011",
+    "Term": "CBS",
+    "Category": "Technology",
+    "Full_Form": "Core Banking System",
+    "Plain_English_Explanation": "The bank's primary backend central ledger and transaction processing software where final balances and account statuses are updated.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-012",
+    "Term": "STP",
+    "Category": "Operations",
+    "Full_Form": "Straight-Through Processing",
+    "Plain_English_Explanation": "Fully automated transaction processing from start to finish without requiring manual human intervention.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-013",
+    "Term": "UBO",
+    "Category": "Compliance",
+    "Full_Form": "Ultimate Beneficial Owner",
+    "Plain_English_Explanation": "The natural person(s) who ultimately own or control a corporate entity or SME client during commercial onboarding.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-014",
+    "Term": "DSCR",
+    "Category": "Commercial Credit",
+    "Full_Form": "Debt Service Coverage Ratio",
+    "Plain_English_Explanation": "A metric measuring a company's available cash flow to pay current debt obligations. A ratio above 1.0 indicates positive cash flow coverage.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-015",
+    "Term": "EBITDA",
+    "Category": "Commercial Credit",
+    "Full_Form": "Earnings Before Interest, Taxes, Depreciation, and Amortization",
+    "Plain_English_Explanation": "A core indicator of a company's overall financial profitability and operational performance.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-016",
+    "Term": "ACAT",
+    "Category": "Wealth Management",
+    "Full_Form": "Automated Customer Account Transfer",
+    "Plain_English_Explanation": "The standardized electronic system used to transfer securities and assets between different brokerages or financial institutions.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-017",
+    "Term": "FICO",
+    "Category": "Retail Credit",
+    "Full_Form": "Fair Isaac Corporation Credit Score",
+    "Plain_English_Explanation": "Standardized consumer credit scoring model used to evaluate individual creditworthiness.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-018",
+    "Term": "3DS",
+    "Category": "Fraud / Security",
+    "Full_Form": "3-D Secure",
+    "Plain_English_Explanation": "Protocol providing an additional layer of authentication for online credit card transactions to prevent fraud.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-019",
+    "Term": "CLI",
+    "Category": "Card Services",
+    "Full_Form": "Credit Limit Increase",
+    "Plain_English_Explanation": "A client request to raise the maximum borrowing threshold on their existing revolving credit card line.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-020",
+    "Term": "W2",
+    "Category": "Underwriting",
+    "Full_Form": "Tax Documentation Form W2",
+    "Plain_English_Explanation": "Standard US tax document used to verify employee wage earnings.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-021",
+    "Term": "1099",
+    "Category": "Underwriting",
+    "Full_Form": "Tax Documentation Form 1099",
+    "Plain_English_Explanation": "Standard US tax document used to verify independent contractor or self-employed earnings.",
+    "Status": "confirmed"
+  },
+  {
+    "ID": "JD-022",
+    "Term": "AML",
+    "Category": "Compliance",
+    "Full_Form": "Anti-Money Laundering",
+    "Plain_English_Explanation": "Checks that a client's funds and activity are not linked to money laundering or other financial crime.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-023",
+    "Term": "RM",
+    "Category": "Operations",
+    "Full_Form": "Relationship Manager",
+    "Plain_English_Explanation": "The bank staff member who manages the client relationship and often submits requests on the client's behalf.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-024",
+    "Term": "POS",
+    "Category": "Card Services",
+    "Full_Form": "Point of Sale",
+    "Plain_English_Explanation": "A transaction made in person at a merchant's terminal, such as a card swipe or tap at a store.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-025",
+    "Term": "DE-4",
+    "Category": "Operations",
+    "Full_Form": "Decision Engine Rule 4",
+    "Plain_English_Explanation": "An automated rule ID in the bank's decision engine. The case was approved automatically under this rule, with no manual review.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-026",
+    "Term": "Chargeback",
+    "Category": "Card Services",
+    "Full_Form": "Chargeback",
+    "Plain_English_Explanation": "A reversal of a card payment, requested through the card network when a customer disputes a transaction and the merchant must justify it.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-027",
+    "Term": "Provisional Credit",
+    "Category": "Card Services",
+    "Full_Form": "Provisional Credit",
+    "Plain_English_Explanation": "A temporary credit given to the customer while a disputed transaction is investigated. It can be reversed if the dispute is denied.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-028",
+    "Term": "Bureau Pull",
+    "Category": "Retail Credit",
+    "Full_Form": "Credit Bureau Pull",
+    "Plain_English_Explanation": "A request for the customer's credit report and score from a credit bureau, used in credit decisions.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-029",
+    "Term": "Adverse Action Notice",
+    "Category": "Retail Credit",
+    "Full_Form": "Adverse Action Notice",
+    "Plain_English_Explanation": "A formal letter sent when credit is declined or limited. It must state the reasons, and the customer has the right to know them.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-030",
+    "Term": "Gift Letter",
+    "Category": "Underwriting",
+    "Full_Form": "Gift Letter",
+    "Plain_English_Explanation": "A signed statement from a donor confirming that money used for a home purchase is a gift, not a loan.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-031",
+    "Term": "Title Search",
+    "Category": "Underwriting",
+    "Full_Form": "Title Search",
+    "Plain_English_Explanation": "A review of public property records to confirm the legal owner of a property and whether it has any claims or liens against it.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-032",
+    "Term": "Appraisal",
+    "Category": "Underwriting",
+    "Full_Form": "Property Appraisal",
+    "Plain_English_Explanation": "An independent estimate of a property's market value. It is the value used to calculate LTV.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-033",
+    "Term": "Letters Testamentary",
+    "Category": "Wealth Management",
+    "Full_Form": "Letters Testamentary",
+    "Plain_English_Explanation": "A court document confirming that a named executor has authority to manage an estate of a deceased person.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-034",
+    "Term": "Tax ID",
+    "Category": "Compliance",
+    "Full_Form": "Taxpayer Identification Number",
+    "Plain_English_Explanation": "The tax number that identifies a business or individual to tax authorities. It is checked during commercial onboarding.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-035",
+    "Term": "Conditional Approval",
+    "Category": "Governance",
+    "Full_Form": "Conditional Approval",
+    "Plain_English_Explanation": "An approval that takes effect only after the listed conditions, such as extra collateral or missing documents, are met.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-036",
+    "Term": "Credit Utilization",
+    "Category": "Card Services",
+    "Full_Form": "Credit Utilization Ratio",
+    "Plain_English_Explanation": "The share of a credit card's limit currently in use. High utilization can signal financial stress and lowers credit scores.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-037",
+    "Term": "API",
+    "Category": "Technology",
+    "Full_Form": "Application Programming Interface",
+    "Plain_English_Explanation": "A set of rules that lets one software system send data to another, such as updating the core banking system automatically.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-038",
+    "Term": "SMS",
+    "Category": "Channel",
+    "Full_Form": "Short Message Service",
+    "Plain_English_Explanation": "A text message sent to the customer's mobile phone, used here for confirmations and notifications.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-039",
+    "Term": "Working Capital Facility",
+    "Category": "Commercial Credit",
+    "Full_Form": "Working Capital Facility",
+    "Plain_English_Explanation": "A business credit line used to fund day-to-day operating costs such as payroll, inventory, and bills.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-040",
+    "Term": "Paystub",
+    "Category": "Underwriting",
+    "Full_Form": "Pay Stub",
+    "Plain_English_Explanation": "A document from an employer showing a worker's pay for a period. Underwriters compare it with other income records to verify earnings.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-041",
+    "Term": "Notarized Document",
+    "Category": "Legal Documentation",
+    "Full_Form": "Notarized Document",
+    "Plain_English_Explanation": "A document signed in front of a licensed notary public, who confirms the signer's identity. Used for legal and estate paperwork.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-042",
+    "Term": "Death Certificate",
+    "Category": "Legal Documentation",
+    "Full_Form": "Death Certificate",
+    "Plain_English_Explanation": "An official government record of a person's death. It is required before an estate account can be opened or managed.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-043",
+    "Term": "E-Signature",
+    "Category": "Operations",
+    "Full_Form": "Electronic Signature",
+    "Plain_English_Explanation": "A legally binding signature captured digitally, such as on a screen, instead of on paper.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-044",
+    "Term": "Trust and Estate Officer",
+    "Category": "Wealth Management",
+    "Full_Form": "Trust and Estate Officer",
+    "Plain_English_Explanation": "The specialist who reviews trust and estate accounts, including the authority of executors and beneficiaries.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-045",
+    "Term": "Authorized Signer",
+    "Category": "Wealth Management",
+    "Full_Form": "Authorized Signer",
+    "Plain_English_Explanation": "A person approved to act on an account, such as signing transactions or instructions for it.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-046",
+    "Term": "Securities Match Check",
+    "Category": "Wealth Management",
+    "Full_Form": "Securities Match Check",
+    "Plain_English_Explanation": "A check that the securities listed in a transfer request match the holdings at the sending institution.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-047",
+    "Term": "Merchant Rebuttal",
+    "Category": "Card Services",
+    "Full_Form": "Merchant Rebuttal",
+    "Plain_English_Explanation": "The merchant's formal response to a card dispute, with evidence that the transaction was valid.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-048",
+    "Term": "Collateral",
+    "Category": "Underwriting",
+    "Full_Form": "Collateral",
+    "Plain_English_Explanation": "An asset pledged to secure a loan. The lender can claim it if the borrower does not repay.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-049",
+    "Term": "Underwriting",
+    "Category": "Underwriting",
+    "Full_Form": "Underwriting",
+    "Plain_English_Explanation": "The review of a credit request to judge risk and decide whether to approve it, and on what terms.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-050",
+    "Term": "SME",
+    "Category": "Commercial Credit",
+    "Full_Form": "Small and Medium Enterprise",
+    "Plain_English_Explanation": "A small or medium-sized business customer. Commercial cases for SMEs follow business-banking checks, such as identifying the owners.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-051",
+    "Term": "Wire Transfer",
+    "Category": "Operations",
+    "Full_Form": "Wire Transfer",
+    "Plain_English_Explanation": "An electronic transfer of funds from one bank account to another, usually settled the same day.",
+    "Status": "to_confirm"
+  },
+  {
+    "ID": "JD-052",
+    "Term": "Mortgage Refinance",
+    "Category": "Retail Banking",
+    "Full_Form": "Mortgage Refinance",
+    "Plain_English_Explanation": "Replacing an existing home loan with a new one, usually to obtain a lower rate or different terms. The new loan is underwritten like a new mortgage, so the property's appraisal, LTV, and income checks apply.",
+    "Status": "to_confirm"
+  }
+]
