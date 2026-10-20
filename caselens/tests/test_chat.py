@@ -125,7 +125,7 @@ def test_status_with_explicit_id_is_deterministic(df, patterns, entries):
 
 
 def test_open_case_is_reported_open(df, patterns, entries):
-    reply = chat.answer("is CS-2026-1006 still open?", df, patterns, entries)
+    reply = chat.answer("is CS-2026-1005 still open?", df, patterns, entries)
     assert "Status: Open" in reply["text"]
 
 
@@ -141,9 +141,11 @@ def test_documents_question_lists_attached_documents(df, patterns, entries):
 
 
 def test_time_to_stage_is_computed_exactly(df, patterns, entries):
-    # CS-2026-1047 Stage 3 starts 2026-03-18 15:00, Stage 1 2026-03-13 10:00 -> 125 hours
-    reply = chat.answer("how long to reach stage 3 in CS-2026-1047", df, patterns, entries)
-    assert "125.0 hours" in reply["text"] or "5.2 days" in reply["text"]
+    # Stage 3 entry minus Stage 1 entry for CS-2026-1001, computed from the timestamps
+    row = df[df["Case_ID"] == "CS-2026-1001"].iloc[0]
+    hours = (row["Stage_3_Timestamp"] - row["Stage_1_Timestamp"]).total_seconds() / 3600
+    reply = chat.answer("how long to reach stage 3 in CS-2026-1001", df, patterns, entries)
+    assert f"{hours:.1f} hours" in reply["text"] or f"{hours / 24:.1f} days" in reply["text"]
 
 
 def test_no_documents_case_says_so(df, patterns, entries):
@@ -153,15 +155,15 @@ def test_no_documents_case_says_so(df, patterns, entries):
 
 def test_still_stalled_list_returns_only_open_stalled_case(df, patterns, entries):
     reply = chat.answer("Give me list of few cases which are still stalled?", df, patterns, entries)
-    assert "CS-2026-1006" in reply["text"]
-    assert "CS-2026-1047" not in reply["text"]
+    assert "CS-2026-1005" in reply["text"]
+    assert "CS-2026-1002" not in reply["text"]
     assert "Which case" not in reply["text"]
 
 
 def test_list_stalled_cases_includes_stalled_and_excludes_clean(df, patterns, entries):
     reply = chat.answer("List few cases marked as stalled", df, patterns, entries)
-    assert "CS-2026-1001" in reply["text"]
-    assert "CS-2026-1047" not in reply["text"]
+    assert "CS-2026-1002" in reply["text"]
+    assert "CS-2026-1001" not in reply["text"]
 
 
 def test_mention_case_ids_returns_case_list_not_glossary_refusal(df, patterns, entries):

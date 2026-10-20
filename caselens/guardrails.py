@@ -65,7 +65,8 @@ def prompt_hash(messages: list[dict]) -> str:
 
 
 def audit(kind: str, *, case_ids=None, masked_prompt_hash="", model="", citations=None,
-          dropped=0, error="", path: Path | None = None, latency_ms=None, tokens=None) -> None:
+          dropped=0, error="", path: Path | None = None, latency_ms=None, tokens=None,
+          summary_id: str | None = None) -> None:
     """Append one line to the audit log. Stores hashes and IDs only, never the raw question or key."""
     path = Path(path or LOG_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -81,6 +82,7 @@ def audit(kind: str, *, case_ids=None, masked_prompt_hash="", model="", citation
         "error": error,
         "latency_ms": latency_ms,
         "total_tokens": tokens,
+        "summary_id": summary_id,
     }
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry, ensure_ascii=False) + "\n")

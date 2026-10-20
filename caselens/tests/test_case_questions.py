@@ -15,12 +15,12 @@ def _ask(question):
 
 
 def test_closed_case_needs_no_client_action():
-    text = _ask("What is needed from the client to proceed with CS-2026-1101?")
+    text = _ask("What is needed from the client to proceed with CS-2026-1001?")
     assert "No action is needed from the client" in text
 
 
 def test_open_case_client_needs_show_stage():
-    text = _ask("What is needed from the client to proceed with CS-2026-1103?")
+    text = _ask("What is needed from the client to proceed with CS-2026-1005?")
     assert "open at Stage" in text
 
 
@@ -36,9 +36,9 @@ def test_long_closure_question_gives_turnaround_reason():
 
 def test_case_answers_have_no_contact_details():
     df, _, _ = _data()
-    row = df[df["Case_ID"] == "CS-2026-1103"].iloc[0]
-    for q in ["What is needed from the client to proceed with CS-2026-1103?",
-              "Why did CS-2026-1103 take a long time?"]:
+    row = df[df["Case_ID"] == "CS-2026-1005"].iloc[0]
+    for q in ["What is needed from the client to proceed with CS-2026-1005?",
+              "Why did CS-2026-1005 take a long time?"]:
         text = _ask(q)
         for value in [row["Client_Email"], row["Account_Number"], row["Contact_Phone"], row["Client_Name"]]:
             assert str(value) not in text

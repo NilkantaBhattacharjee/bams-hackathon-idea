@@ -43,21 +43,163 @@ OPEN_WORD = re.compile(r"\b(still|open|ongoing|pending|unresolved|not closed)\b"
 CLOSED_WORD = re.compile(r"\b(closed|resolved|completed|finished)\b", re.IGNORECASE)
 ANY_CASE_ID = re.compile(r"\bCS-\d{4}-\d{4}\b", re.IGNORECASE)
 MAX_LIST = 10
+# Document names as stored in Document_Details. The group 'identification' covers identity-type documents.
+DOC_NAME_ALIASES = {
+    "passport": ["Passport"],
+    "identification": ["Passport", "Tax ID Certificate", "Death Certificate"],
+    "identity": ["Passport", "Tax ID Certificate", "Death Certificate"],
+    "id document": ["Passport", "Tax ID Certificate", "Death Certificate"],
+    "tax id": ["Tax ID Certificate"],
+    "death certificate": ["Death Certificate"],
+    "paystub": ["Paystub"],
+    "pay stub": ["Paystub"],
+    "bank statement": ["Bank Statement"],
+    "proof of address": ["Proof of Address"],
+}
+
+
+def doc_name_filter(question: str) -> list[str] | None:
+    """Document names the question asks about, or None if no document name is named."""
+    q = (question or "").lower()
+    for alias in sorted(DOC_NAME_ALIASES, key=len, reverse=True):
+        if re.search(r"\b" + re.escape(alias) + r"\b", q):
+            return DOC_NAME_ALIASES[alias]
+    return None
+
+
+DOCS_YES = re.compile(r"\b(with|have|has|attached|attachments?)\b.*\bdocuments?\b|\bdocuments? attached\b", re.I)
+DOCS_NO = re.compile(r"\b(no|without|not|missing)\b.*\bdocuments?\b", re.I)
+PRIORITY_Q = re.compile(r"\b(p1|p2|priority)\b", re.I)
+CLIENT_WAIT_Q = re.compile(r"\b(waiting|wait|needed|needs?)\b.*\b(client|customer)\b|\b(client|customer)\b.*\b(action|waiting|needed)\b", re.I)
+
+
+VERIFY_Q = re.compile(r"\b(are|is|were|was)\b.*\b(all|these|those|them|they)\b", re.IGNORECASE)
+
+
+def subtype_filter(question: str, df) -> tuple[str, str] | None:
+    """(column, value) for a sub-type or type named in the question, e.g. 'personal loan'. None if absent."""
+    q = (question or "").lower().replace("_", " ")
+    for col in ("Specific_Sub_Type", "Specific_Type"):
+        values = sorted(df[col].unique(), key=len, reverse=True)  # longest first, so 'credit card' wins
+        for value in values:
+            if re.search(r"\b" + re.escape(value.lower().replace("_", " ")) + r"\b", q):
+                return col, value
+    return None
+
+
+def previous_case_ids(history) -> list[str]:
+    """Case IDs named in the most recent assistant answer."""
+    for msg in reversed(history or []):
+        if msg.get("role") == "assistant":
+            return list(dict.fromkeys(ANY_CASE_ID.findall(str(msg.get("content", "")).upper())))
+    return []
+
+
+def previous_truncated(history) -> bool:
+    for msg in reversed(history or []):
+        if msg.get("role") == "assistant":
+            return "Showing the first" in str(msg.get("content", ""))
+    return False
+
+
+def verify_text(ids: list[str], ftr: tuple[str, str], df, truncated: bool = False) -> str:
+    """Check each listed case against a sub-type or type. Uses the CSV, not the model."""
+    col, value = ftr
+    label = value.replace("_", " ")
+    field = dict(zip(df["Case_ID"], df[col]))
+    checked = [c for c in ids if c in field]
+    if not checked:
+        return "There are no cases from the previous answer to check. Ask for the list first."
+    note = " Only the cases shown in the previous answer were checked." if truncated else ""
+    miss = [c for c in checked if field[c] != value]
+    if not miss:
+        return f"Yes. All {len(checked)} cases listed above are {label} cases.{note}"
+    lines = [f"No. {len(checked) - len(miss)} of {len(checked)} cases listed above are {label} cases.{note}",
+             "Not " + label + ":"]
+    lines += [f"- {c} | {field[c].replace('_', ' ')}" for c in miss]
+    return "\n".join(lines)
+
+
+DOC_ASK = re.compile(
+    r"\b(documents?|paperwork|files?|proof)\b"
+    r".*\b(needed|needs?|required|require[sd]?|for|usually|typically|should|must)\b"
+    r"|\b(needed|needs?|required|require[sd]?|for|usually|typically|should|must)\b.*\b(documents?|paperwork|files?|proof)\b",
+    re.IGNORECASE,
+)
+
+
+def subtype_docs_text(question: str, ftr, df, patterns) -> str | None:
+    """Documents recorded on cases of a named sub-type or type, with counts. Reads the CSV only."""
+    if not ftr or not DOC_ASK.search(question or ""):
+        return None
+    col, value = ftr
+    label = value.replace("_", " ")
+    counts: dict[str, int] = {}
+    total = 0
+    for cid in df["Case_ID"]:
+        if df.loc[df["Case_ID"] == cid, col].iloc[0] != value:
+            continue
+        total += 1
+        f = summary.case_facts(df, cid, patterns)
+        for name in dict.fromkeys(n for n, _ in doc_items(f)):
+            counts[name] = counts.get(name, 0) + 1
+    if total == 0:
+        return f"No cases are recorded for {label}."
+    if not counts:
+        return (f"No documents are recorded on the {total} {label} case(s). "
+                "The case records do not list a document requirement.")
+    lines = [f"Documents recorded on {total} {label} case(s):"]
+    lines += [f"- {name}: on {n} of {total} cases" for name, n in sorted(counts.items(), key=lambda kv: -kv[1])]
+    lines.append("This is based on the documents attached to past cases, not a policy list.")
+    return "\n".join(lines)
 
 
 def list_cases(question: str, df, patterns) -> str | None:
-    """List cases matching a stall or open/closed filter. Returns None if the question is not a list request."""
+    """List cases matching a sub-type or type, and/or a stall or open/closed filter. None if not a list request."""
     q = question or ""
     if ANY_CASE_ID.search(q) or not CASE_PLURAL.search(q) or not LIST_WORD.search(q):
         return None
+    ftr = subtype_filter(q, df)
     want_stall = bool(STALL_LIST.search(q))
     want_open = bool(OPEN_WORD.search(q))
     want_closed = bool(CLOSED_WORD.search(q))
     status_filter = want_open != want_closed  # both, or neither, means no status filter
+    docs_yes = bool(DOCS_YES.search(q)) and not DOCS_NO.search(q)
+    docs_no = bool(DOCS_NO.search(q))
+    doc_names = doc_name_filter(q)
+    if doc_names:
+        docs_yes = True
+    prio = re.search(r"\bP([12])\b", q, re.I)
+    want_client = bool(CLIENT_WAIT_Q.search(q))
+    stage_num = None
+    stage_m = re.search(r"\bstage\s*([1-5])\b", q, re.I)
+    if stage_m:
+        stage_num = int(stage_m.group(1))
 
     rows = []
     for cid in df["Case_ID"]:
         f = summary.case_facts(df, cid, patterns)
+        if ftr and f["sub_type"] != ftr[1] and ftr[0] == "Specific_Sub_Type":
+            continue
+        if ftr and f["type"] != ftr[1] and ftr[0] == "Specific_Type":
+            continue
+        if docs_yes and f["documents"] != "Yes":
+            continue
+        if doc_names and not any(name in [n for n, _ in doc_items(f)] for name in doc_names):
+            continue
+        if docs_no and f["documents"] == "Yes":
+            continue
+        if prio and str(df.loc[df["Case_ID"] == cid, "Priority"].iloc[0]) != f"P{prio.group(1)}":
+            continue
+        if want_client and not (not f["closed"] and any(s == "Pending" for _, s in doc_items(f))):
+            continue
+        if stage_num is not None:
+            if want_stall and stage_num not in f["stalls"]:
+                continue
+            if not want_stall and not f["closed"] and current_stage(f) != stage_num:
+                continue
+            if not want_stall and f["closed"]:
+                continue
         if want_stall and not f["stalls"]:
             continue
         if status_filter and want_open and f["closed"]:
@@ -67,6 +209,20 @@ def list_cases(question: str, df, patterns) -> str | None:
         rows.append((cid, f))
 
     desc = []
+    if ftr:
+        desc.append(ftr[1].replace("_", " "))
+    if doc_names:
+        desc.append("with " + " or ".join(doc_names).lower())
+    elif docs_yes:
+        desc.append("with documents")
+    if docs_no:
+        desc.append("without documents")
+    if prio:
+        desc.append(f"P{prio.group(1)}")
+    if want_client:
+        desc.append("waiting for the client")
+    if stage_num is not None:
+        desc.append(f"at stage {stage_num}")
     if want_stall:
         desc.append("stalled")
     if status_filter:
@@ -211,19 +367,63 @@ def open_reason_text(f) -> str:
     return "\n\n".join(lines)
 
 
+STALL_REASON_Q = re.compile(
+    r"\b(why|reason)\b.*\b(stall|stalled|stuck|delay|delayed)\b"
+    r"|\b(stall|stalled|stuck|delay|delayed)\b.*\b(why|reason)\b",
+    re.I,
+)
+
+
+def stall_reason_text(f) -> str:
+    """Stalled stages with their recorded comments. Reads the CSV only."""
+    if not f["stalls"]:
+        return f"No stall was recorded for {f['case_id']}."
+    lines = [f"{f['case_id']} was stalled in:"]
+    for n in f["stalls"]:
+        comment = summary.mask(f["comments"][n]).strip()
+        lines.append(f"- Stage {n} ({summary.STAGE_NAMES[n]}): {comment}")
+    if f["closed"]:
+        lines.append("The case later moved on and closed.")
+    else:
+        lines.append("The case has moved on to a later stage, but is still open.")
+    return "\n".join(lines)
+
+
 RANK_Q = re.compile(r"\b(longest|slowest|most time|highest|maximum|max)\b", re.I)
 CASE_WORD = re.compile(r"\bcases?\b", re.I)
 
 
-def ranking_text(df, patterns, n: int = 5) -> str:
-    """Closed cases ranked by total turnaround, longest first. Open cases have no final turnaround."""
+SHORT_Q = re.compile(r"\b(shortest|fastest|quickest|least time|minimum|min)\b", re.I)
+TOTAL_Q = re.compile(r"\b(total|overall|altogether|in all)\b|\bhow many cases\b|\bnumber of cases\b|\bcount of cases\b", re.I)
+FILTER_WORDS = re.compile(
+    r"\b(stall|stalled|delay|open|closed|still|pending|waiting|client|customer|document|documents|"
+    r"p1|p2|priority|stage|with|without|no|missing|attached)\b",
+    re.I,
+)
+
+
+def total_question(question: str, df) -> bool:
+    """A plain 'how many cases in total' question with no filter in it."""
+    q = question or ""
+    return bool(TOTAL_Q.search(q)) and not FILTER_WORDS.search(q) and subtype_filter(q, df) is None
+
+
+def total_text(df, patterns) -> str:
+    closed = sum(1 for cid in df["Case_ID"] if summary.case_facts(df, cid, patterns)["closed"])
+    total = len(df)
+    return (f"There are {total} cases in total: {closed} closed and {total - closed} open.")
+
+
+def ranking_text(df, patterns, n: int = 5, ascending: bool = False) -> str:
+    """Closed cases ranked by total turnaround. Longest first by default; shortest first when ascending."""
     rows = []
     for cid in df["Case_ID"]:
         f = summary.case_facts(df, cid, patterns)
         if f["closed"] and not pd.isna(f["tat_hours"]):
             rows.append(f)
-    rows.sort(key=lambda f: f["tat_hours"], reverse=True)
-    lines = [f"Closed cases with the longest turnaround (top {min(n, len(rows))}):"]
+    rows.sort(key=lambda f: f["tat_hours"], reverse=not ascending)
+    word = "shortest" if ascending else "longest"
+    lines = [f"Closed cases with the {word} turnaround (top {min(n, len(rows))}):"]
     for f in rows[:n]:
         ctype = f["type"].replace("_", " ")
         sub = f["sub_type"].replace("_", " ")
@@ -237,6 +437,11 @@ def answer_facts(question: str, cid: str, df, patterns) -> str | None:
     q = question.lower()
     if EXTRA_DOC_Q.search(q) or (NEED_Q.search(q) and DOC_Q.search(q)):
         return pending_docs_text(f)
+    # 'how long / took ... to close' asks about time, not about what the client must do.
+    names_stage = re.search(r"\bstage\s*[1-5]\b|\b(first|second|third|fourth|fifth)\b", q)
+    if (re.search(r"\b(how long|took|take|taken|time)\b", q)
+            and not re.search(r"\b(needed|needs?|require|provide)\b", q) and not names_stage):
+        return duration_text(f)
     if NEED_Q.search(q):
         return client_needs_text(f)
     has_stage_ref = bool(re.search(r"\bstage\s*[1-5]\b|\b(first|second|third|fourth|fifth)\b", q))

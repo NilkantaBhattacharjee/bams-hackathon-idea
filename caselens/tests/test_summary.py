@@ -51,9 +51,9 @@ def test_keep_cited_drops_uncited_and_unknown_citations():
 
 def test_case_facts_finds_bottleneck_for_case_1001(df, patterns):
     facts = summary.case_facts(df, "CS-2026-1001", patterns)
-    # Stage 2 runs 2026-03-01 14:15 -> 2026-03-04 11:20, the longest stage (69.1 h)
-    assert facts["bottleneck"][0] == 2
-    assert facts["tat_hours"] == pytest.approx(145.5)
+    # CS-2026-1001 has Stage 3 as the longest stage (64.0 h) in the regenerated data
+    assert facts["bottleneck"][0] == 3
+    assert facts["tat_hours"] == pytest.approx(88.59)
 
 
 def test_template_summary_lines_all_carry_valid_citations(df, patterns, no_key):
@@ -84,37 +84,38 @@ def test_unknown_case_raises(df, patterns):
 
 
 def test_closed_detection_on_real_cases(df, patterns):
-    assert summary.case_facts(df, "CS-2026-1037", patterns)["closed"] is True  # "Closed."
-    assert summary.case_facts(df, "CS-2026-1001", patterns)["closed"] is True  # "STP completed."
-    assert summary.case_facts(df, "CS-2026-1006", patterns)["closed"] is False  # "Closing scheduled."
+    assert summary.case_facts(df, "CS-2026-1001", patterns)["closed"] is True
+    assert summary.case_facts(df, "CS-2026-1005", patterns)["closed"] is False
+    assert summary.case_facts(df, "CS-2026-1008", patterns)["closed"] is False
 
 
 def test_stall_stages_for_known_cases(df, patterns):
-    assert summary.case_facts(df, "CS-2026-1006", patterns)["stalls"] == [2, 3]
-    assert summary.case_facts(df, "CS-2026-1001", patterns)["stalls"] == [2]
+    assert summary.case_facts(df, "CS-2026-1005", patterns)["stalls"] == [3]
+    assert summary.case_facts(df, "CS-2026-1002", patterns)["stalls"] == [2]
+    assert summary.case_facts(df, "CS-2026-1001", patterns)["stalls"] == []
 
 
 def test_decision_wording_is_not_a_stall(df, patterns):
-    # CS-2026-1005 Stage 3: "Evidence insufficient." is a decision, not a hold-up.
-    assert summary.case_facts(df, "CS-2026-1005", patterns)["stalls"] == []
+    # CS-2026-1001 Stage 3 comment is a decision, not a hold-up.
+    assert summary.case_facts(df, "CS-2026-1001", patterns)["stalls"] == []
 
 
 def test_clean_case_has_no_stall(df, patterns):
-    assert summary.case_facts(df, "CS-2026-1100", patterns)["stalls"] == []
+    assert summary.case_facts(df, "CS-2026-1001", patterns)["stalls"] == []
 
 
 def test_prompt_records_past_stall_and_status(df, patterns):
-    facts = summary.case_facts(df, "CS-2026-1006", patterns)
+    facts = summary.case_facts(df, "CS-2026-1008", patterns)
     prompt = summary.build_prompt(facts)
     assert "[M3] Stall recorded in Stage 2" in prompt
     assert "[M4] Case status: open" in prompt
 
 
 def test_template_mentions_stall_with_citation(df, patterns, no_key):
-    result = summary.summarize_case("CS-2026-1006", df=df, patterns=patterns)
+    result = summary.summarize_case("CS-2026-1008", df=df, patterns=patterns)
     stall_lines = [line for line in result["lines"] if "[M3]" in line]
     assert stall_lines
-    assert "Stage 2" in stall_lines[0] and "Stage 3" in stall_lines[0]
+    assert "Stage 2" in stall_lines[0]
 
 
 def test_card_has_required_sections_and_no_inline_citations(df, patterns, no_key):
@@ -124,9 +125,9 @@ def test_card_has_required_sections_and_no_inline_citations(df, patterns, no_key
     for heading in ["Case: CS-2026-1001", "Purpose:", "Created:", "Current Stage:",
                     "Summary:", "Key Events:", "Documents:", "SLA:"]:
         assert heading in card, heading
-    assert "01-Mar-2026" in card
-    assert "7-day target" in card  # CS-2026-1001 SLA_Days = 7
-    assert "✓ Passport" in card  # CS-2026-1001 Document_Details
+    assert "04-Dec-2025" in card
+    assert "2-day target" in card  # CS-2026-1001 SLA_Days = 2
+    assert "✓ Income Proof" in card  # CS-2026-1001 Document_Details
     assert "[C" not in card and "[M" not in card
 
 
@@ -168,8 +169,8 @@ def test_closed_rule_is_added_to_system_prompt_only_when_closed(monkeypatch, df,
     monkeypatch.setattr(summary, "get_settings", lambda: ("fake-key", "test-model"))
     monkeypatch.setattr(summary, "call_llm", fake_call)
 
-    summary.summarize_case("CS-2026-1037", df=df, patterns=patterns)
+    summary.summarize_case("CS-2026-1001", df=df, patterns=patterns)
     assert summary.CLOSED_RULE in seen["system"]
 
-    summary.summarize_case("CS-2026-1006", df=df, patterns=patterns)
+    summary.summarize_case("CS-2026-1005", df=df, patterns=patterns)
     assert summary.CLOSED_RULE not in seen["system"]

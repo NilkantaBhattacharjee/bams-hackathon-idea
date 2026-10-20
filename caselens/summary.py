@@ -8,7 +8,9 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.request
+import uuid
 from pathlib import Path
 
 import pandas as pd
@@ -48,8 +50,17 @@ STALL_WORDS = re.compile(
 )
 
 
-def stall_stages(comments: dict) -> list[int]:
-    return [n for n in range(1, 5) if STALL_WORDS.search(comments.get(n) or "")]
+def latest_stage(comments: dict) -> int:
+    """Latest stage with a non-blank comment. Defaults to Stage 1."""
+    filled = [n for n in range(1, 6) if (comments.get(n) or "").strip()]
+    return max(filled) if filled else 1
+
+
+def stall_stages(comments: dict, closed: bool = True) -> list[int]:
+    """Stages with a recorded hold-up that the case has moved past.
+    Closed cases have moved past every stage. For an open case, the current stage is not a past stall."""
+    cutoff = 5 if closed else latest_stage(comments)
+    return [n for n in range(1, 5) if n < cutoff and STALL_WORDS.search(comments.get(n) or "")]
 
 
 def stall_names(f) -> str:
@@ -122,6 +133,16 @@ def get_settings() -> tuple[str, str]:
     return key, model
 
 
+def get_price_per_1k() -> float:
+    """Price in USD per 1,000 tokens, from OPENROUTER_PRICE_PER_1K_TOKENS. Defaults to 0 (no cost shown)."""
+    env = load_env()
+    raw = os.environ.get("OPENROUTER_PRICE_PER_1K_TOKENS") or env.get("OPENROUTER_PRICE_PER_1K_TOKENS", "0")
+    try:
+        return max(float(raw), 0.0)
+    except ValueError:
+        return 0.0
+
+
 def mask(text) -> str:
     out = text if isinstance(text, str) else ""
     for pattern, token in MASKS:
@@ -162,8 +183,9 @@ def case_facts(df, case_id, patterns) -> dict:
         "terms": list(terms.values()),
         "timestamps": {n: r[f"Stage_{n}_Timestamp"] for n in range(1, 6)},
         "sla_days": None if pd.isna(r.get("SLA_Days")) else int(r["SLA_Days"]),
+        "priority": None if pd.isna(r.get("Priority")) else str(r["Priority"]),
         "doc_details": "" if pd.isna(r.get("Document_Details")) else str(r["Document_Details"]),
-        "stalls": stall_stages(comments),
+        "stalls": stall_stages(comments, closed=closed_status(r, comments[5])),
     }
 
 
@@ -249,9 +271,11 @@ def render_card(f, lines: list[str]) -> str:
     stage = f"Stage 5 - {STAGE_NAMES[5]} ({'Closed' if f['closed'] else 'Open'})"
     purpose = f"{f['sub_type'].replace('_', ' ')} ({f['type'].replace('_', ' ')})"
     sla = f["sla_days"]
+    priority = f.get("priority") or "Not recorded"
     return "\n".join([
         f"Case: {f['case_id']}", "",
         "Purpose:", purpose, "",
+        "Priority:", priority, "",
         "Created:", fmt_date(f["timestamps"][1]), "",
         "Current Stage:", stage, "",
         "Summary:", *body, "",
@@ -277,9 +301,18 @@ def call_llm(prompt: str, key: str, model: str, system: str = SYSTEM_PROMPT, tim
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
         method="POST",
     )
+    started = time.perf_counter()
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         data = json.load(resp)
+    LAST_CALL.clear()
+    LAST_CALL.update({
+        "tokens": (data.get("usage") or {}).get("total_tokens"),
+        "latency_ms": round((time.perf_counter() - started) * 1000),
+    })
     return data["choices"][0]["message"]["content"]
+
+
+LAST_CALL: dict = {}  # tokens and latency of the most recent model call
 
 
 def call_llm_with_retry(prompt: str, key: str, model: str, system: str, attempts: int = 2) -> str:
@@ -342,10 +375,13 @@ def summarize_case(case_id, df=None, patterns=None, use_llm=True) -> dict:
         try:
             system = SYSTEM_PROMPT + CURRENT_STATE_RULE + (CLOSED_RULE if f["closed"] else "")
             raw = call_llm_with_retry(build_prompt(f), key, model, system=system)
+            call = dict(LAST_CALL)
             kept, dropped = keep_cited(raw, allowed_sources(f))
             import guardrails
             guardrails.audit("summary", case_ids=[f["case_id"]], model=model,
-                             citations=CITATION.findall("\n".join(kept)), dropped=dropped)
+                             citations=CITATION.findall("\n".join(kept)), dropped=dropped,
+                             latency_ms=call.get("latency_ms"), tokens=call.get("tokens"),
+                             summary_id=uuid.uuid4().hex[:12])
             if f["closed"]:
                 before = len(kept)
                 kept = drop_open_language(kept)

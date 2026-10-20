@@ -1,6 +1,6 @@
 # Gold Question Results
 
-- Date: 2026-10-14
+- Date: 2026-10-15
 - Passed: 30 of 30
 - Mode: offline (rules and computed figures, no model call)
 

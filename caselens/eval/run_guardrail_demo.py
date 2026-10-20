@@ -21,6 +21,9 @@ from metrics import load_cases  # noqa: E402
 RAW_CLIENT_LEAK = "client CL-90812 has an open question"
 
 
+_real_masked_ok = guardrails.masked_ok
+
+
 def run() -> int:
     df = load_cases(CASES_CSV)
     entries = load_entries(JARGON_JSON)
@@ -38,14 +41,23 @@ def run() -> int:
     reply = chat.answer("x" * 501, df, patterns, entries)
     results.append(("long input refused", "under 500 characters" in reply["text"]))
 
-    # 3. Raw client ID in the prompt blocks the model call.
+    # 3. Raw client ID in the prompt blocks the model call. The masking function is replaced only inside
+    #    this check, and restored right after it.
     calls.clear()
-    chat.summary.mask = lambda text: text  # simulate a masking failure
-    reply = chat.llm_answer(RAW_CLIENT_LEAK, entries)
-    chat.summary.mask = summary.mask
+    real_mask = summary.mask
+    summary.mask = lambda text: text  # simulate a masking failure
+    try:
+        reply = chat.llm_answer(RAW_CLIENT_LEAK, entries)
+    finally:
+        summary.mask = real_mask
     results.append(("raw client ID blocked", reply is None and not calls))
 
-    # 4. Email is masked before the model sees it.
+    # 4. Email is masked before the model sees it. The chat masks the question first (as _answer does),
+    #    then calls the model path. Check 8 covers the refusal for contact-detail questions.
+    # Earlier checks replaced some functions; restore them so this check runs on the real code.
+    summary.get_settings = lambda: ("fake", "demo")
+    guardrails.masked_ok = _real_masked_ok
+    chat.summary.mask = summary.mask
     captured = []
 
     def record_call(messages, key, model):
@@ -53,13 +65,13 @@ def run() -> int:
         return "LTV is a ratio [JD-007]."
 
     chat.call_chat = record_call
-    chat.answer("explain LTV for jane.doe@example.com", df, patterns, entries)
+    chat.llm_answer(summary.mask("explain LTV for jane.doe@example.com"), entries)
     sent_text = " ".join(m["content"] for call in captured for m in call)
     email_ok = "jane.doe@example.com" not in sent_text and "[EMAIL]" in sent_text
     if not email_ok:
         print(f"  debug: calls={len(captured)} raw_in_prompt={'jane.doe@example.com' in sent_text} "
               f"tag_in_prompt={'[EMAIL]' in sent_text}")
-    results.append(("email masked", email_ok))
+    results.append(("email masked before model", email_ok))
 
     # 5. Uncited model output is dropped.
     chat.call_chat = lambda *a, **k: "A sentence with no source at all."
@@ -76,6 +88,12 @@ def run() -> int:
     log_text = demo_log.LOG_FILE.read_text(encoding="utf-8") if demo_log.LOG_FILE.exists() else ""
     results.append(("log has no raw question", "explain LTV for jane.doe" not in log_text
                     and "CL-90812" not in log_text))
+
+    # 8. A question asking for contact details is refused before any lookup or model call.
+    calls.clear()
+    chat.call_chat = lambda *a, **k: calls.append(a) or "x"
+    reply = chat.answer("What is the email of CS-2026-1101?", df, patterns, entries)
+    results.append(("contact-detail question refused", chat.PII_NOTE in reply["text"] and not calls))
 
     failures = 0
     print("Guardrail demo")

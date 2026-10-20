@@ -3,8 +3,13 @@
 import pandas as pd
 import streamlit as st
 
+import audit_view
 import chat
+import scorecard
+import export
+import export_extra
 import guardrails
+import sla
 import summary
 import trends
 from config import CASES_CSV, JARGON_JSON
@@ -105,6 +110,32 @@ h2::after {
     border-radius: 3px;
     background: linear-gradient(90deg, #6C5CE7, #00CEC9);
 }
+
+/* Chat input: larger, bordered and shadowed so it stands out */
+.st-key-chat_box [data-testid="stChatInput"] {
+    border: 2px solid #6C5CE7;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(108, 92, 231, 0.22);
+    background: #FFFFFF;
+    padding: 0.2rem 0.4rem;
+}
+.st-key-chat_box [data-testid="stChatInput"]:focus-within {
+    border-color: #00CEC9;
+    box-shadow: 0 0 0 4px rgba(0, 206, 201, 0.25);
+}
+.st-key-chat_box [data-testid="stChatInput"] textarea {
+    font-size: 1.1rem;
+    min-height: 3.2rem;
+}
+.cl-chat-intro {
+    background: #F5F4FF;
+    border-left: 5px solid #00CEC9;
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.6rem;
+    color: #2D3436;
+}
+.cl-chat-intro ul { margin: 0.3rem 0 0 1.1rem; padding: 0; }
 
 /* Chat panel */
 [data-testid="stChatMessage"] {
@@ -219,7 +250,10 @@ def single_case_page(df, patterns) -> None:
     st.caption(f"Mode: {result['mode']}" + (f" ({result['model']})" if result["model"] else ""))
     if result["error"]:
         st.warning(f"Fell back to template: {result['error']}")
-    st.code(summary.render_card(facts, result["lines"]), language=None, wrap_lines=True)
+    card_text = summary.render_card(facts, result["lines"])
+    st.code(card_text, language=None, wrap_lines=True)
+    st.download_button("Download case card (PDF)", data=export_extra.card_pdf(card_text, f"Case {case_id}"),
+                       file_name=f"{case_id}_card.pdf", mime=export_extra.PDF_MIME, key="dl_card")
 
     with st.expander("Stage comments (source data)"):
         rows = [
@@ -246,12 +280,146 @@ def single_case_page(df, patterns) -> None:
     st.caption("Decision support only. A human makes the final decision.")
 
 
+def date_filter(df):
+    """Two date inputs (From, To) inside a form. The range applies only when the user submits.
+    Returns the cases created in the applied range, or None if there is nothing to show."""
+    created = df["Stage_1_Timestamp"].dropna()
+    if created.empty:
+        st.info("No case creation dates are available.")
+        return None
+    lo, hi = created.min().date(), created.max().date()
+
+    with st.form("created_range_form", border=True):
+        st.markdown("**Filter cases by creation date**")
+        c1, c2, c3 = st.columns([1, 1, 0.6], vertical_alignment="bottom")
+        start = c1.date_input("From", value=lo, min_value=lo, max_value=hi, format="DD/MM/YYYY")
+        end = c2.date_input("To", value=hi, min_value=lo, max_value=hi, format="DD/MM/YYYY")
+        submitted = c3.form_submit_button("Apply", type="primary", use_container_width=True)
+
+    if submitted:
+        if start > end:
+            st.session_state["created_range"] = None
+            st.error("The From date is after the To date. Pick a valid range and press Apply.")
+        else:
+            st.session_state["created_range"] = (start, end)
+
+    applied = st.session_state.get("created_range") or (lo, hi)
+    start, end = applied
+    mask = (df["Stage_1_Timestamp"].dt.date >= start) & (df["Stage_1_Timestamp"].dt.date <= end)
+    subset = df[mask].reset_index(drop=True)
+    if subset.empty:
+        st.warning(f"No cases were created between {start:%d %b %Y} and {end:%d %b %Y}.")
+        return None
+    st.success(
+        f"**{len(subset)} case(s)** were created between {start:%d %b %Y} and {end:%d %b %Y}."
+    )
+    return subset
+
+
+def filter_panel(df):
+    """Combined filters inside a form. Results change only when Apply is pressed."""
+    with st.expander("Filters", expanded=False):
+        with st.form("filter_form", border=False):
+            f1, f2, f3 = st.columns(3)
+            types = sorted(df["Specific_Type"].unique())
+            f1.multiselect("Type", types, key="flt_type")
+            subs = sorted(df["Specific_Sub_Type"].unique())
+            f2.multiselect("Sub-type", subs, key="flt_sub")
+            f3.multiselect("Priority", ["P1", "P2"], key="flt_priority")
+            g1, g2, g3 = st.columns(3)
+            g1.selectbox("Status", ["Any", "Open", "Closed"], key="flt_status")
+            g2.selectbox("Current stage", ["Any", 1, 2, 3, 4, 5], key="flt_stage")
+            g3.selectbox("Documents", ["Any", "Yes", "No"], key="flt_docs")
+            st.checkbox("Stalled cases only", key="flt_stalled")
+            submitted = st.form_submit_button("Apply filters", type="primary")
+    if submitted:
+        _apply_filters_from_widgets()
+
+    sel_type = st.session_state.get("applied_flt_type") or []
+    sel_sub = st.session_state.get("applied_flt_sub") or []
+    priority = st.session_state.get("applied_flt_priority") or []
+    status = st.session_state.get("applied_flt_status") or "Any"
+    stage = st.session_state.get("applied_flt_stage") or "Any"
+    docs = st.session_state.get("applied_flt_docs") or "Any"
+    stalled = bool(st.session_state.get("applied_flt_stalled"))
+
+    mask = pd.Series(True, index=df.index)
+    if sel_type:
+        mask &= df["Specific_Type"].isin(sel_type)
+    if sel_sub:
+        mask &= df["Specific_Sub_Type"].isin(sel_sub)
+    if priority and "Priority" in df.columns:
+        mask &= df["Priority"].isin(priority)
+    closed = sla.closed_flags(df)
+    if status == "Open":
+        mask &= ~closed
+    elif status == "Closed":
+        mask &= closed
+    if docs != "Any":
+        mask &= df["Documents_Attached"] == docs
+    if stage != "Any":
+        cur = pd.Series([summary_stage(df, i) for i in df.index], index=df.index)
+        mask &= cur == int(stage)
+    if stalled:
+        mask &= pd.Series([len(summary.stall_stages(summary_comments(df, i), closed=bool(closed[i]))) > 0
+                           for i in df.index],
+                          index=df.index)
+    return df[mask].reset_index(drop=True)
+
+
+FILTER_KEYS = ["flt_type", "flt_sub", "flt_priority", "flt_status", "flt_stage", "flt_docs", "flt_stalled"]
+
+
+def _apply_filters_from_widgets() -> None:
+    """Copy the form widget values into the applied values the page reads."""
+    for key in FILTER_KEYS:
+        st.session_state["applied_" + key] = st.session_state.get(key)
+
+
+def summary_stage(df, idx) -> int:
+    """Latest stage with a non-blank comment, for the Current stage filter."""
+    comments = summary_comments(df, idx)
+    filled = [n for n in range(1, 6) if comments[n].strip()]
+    return max(filled) if filled else 1
+
+
+def summary_comments(df, idx) -> dict:
+    row = df.loc[idx]
+    return {n: row[f"Stage_{n}_Comments"] if isinstance(row[f"Stage_{n}_Comments"], str) else ""
+            for n in range(1, 6)}
+
+
+def sla_section(df, as_of=None) -> None:
+    """Cases past their SLA: closed cases over target, and open cases already past target."""
+    st.subheader("SLA breaches")
+    breaches = sla.breach_table(df, as_of=as_of)
+    if breaches.empty:
+        st.success("No cases are past their SLA in this selection.")
+        return
+    closed_n = int((breaches["Status"] == "Closed").sum())
+    st.caption(f"{len(breaches)} case(s) past SLA: {closed_n} closed late, {len(breaches) - closed_n} open and past target.")
+    st.dataframe(breaches, hide_index=True)
+    st.download_button("Download SLA breaches (CSV)", data=export_extra.table_csv(breaches),
+                       file_name="caselens_sla_breaches.csv", mime=export_extra.CSV_MIME, key="dl_sla")
+
+
 def batch_page(df, patterns) -> None:
     st.header("Batch view")
+    all_df = df
+    df = date_filter(df)
+    if df is None:
+        return
+    lo, hi = all_df["Stage_1_Timestamp"].min().date(), all_df["Stage_1_Timestamp"].max().date()
+    start, end = st.session_state.get("created_range") or (lo, hi)
+    df = filter_panel(df)
+    if df.empty:
+        st.warning("No cases match the selected filters.")
+        return
     total = total_tat_hours(df)
     stalls = [summary.case_facts(df, cid, patterns)["stalls"] for cid in df["Case_ID"]]
     summary_df = pd.DataFrame({
         "Case_ID": df["Case_ID"],
+        "Created": df["Stage_1_Timestamp"].dt.strftime("%d-%b-%Y"),
         "Type": df["Specific_Type"],
         "Sub_type": df["Specific_Sub_Type"],
         "TAT_hours": total,
@@ -313,20 +481,66 @@ def batch_page(df, patterns) -> None:
 
     st.subheader("Cases")
     st.dataframe(summary_df.round(1), hide_index=True)
+    st.download_button("Download case list (CSV)", data=export_extra.table_csv(summary_df.round(1)),
+                       file_name="caselens_cases.csv", mime=export_extra.CSV_MIME, key="dl_cases")
+
+    sla_section(df)
+
+    st.subheader("Export")
+    report_rows = [
+        ("Date range", f"{start:%d %b %Y} to {end:%d %b %Y}"),
+        ("Cases", str(len(df))),
+        ("Stalled cases", str(int(summary_df["Stalled"].sum()))),
+        ("Average TAT (h)", f"{summary_df['TAT_hours'].mean():.1f}"),
+        ("Narrative", mode),
+    ] + [("Trend report", line) for line in lines]
+    st.download_button(
+        "Download Excel report",
+        data=export.build_workbook(report_rows, by_type, counts, sub, summary_df.round(1)),
+        file_name=f"caselens_bulk_{start:%Y%m%d}_{end:%Y%m%d}.xlsx",
+        mime=export.MIME,
+        type="primary",
+    )
+
+
+def feedback_buttons(index: int) -> None:
+    """Thumbs up or down under an answer. A vote is logged once, as a feedback event, with no question text."""
+    voted = st.session_state.setdefault("votes", {})
+    if index in voted:
+        st.caption(f"Thanks. You marked this answer {'helpful' if voted[index] == 'up' else 'not helpful'}.")
+        return
+    c1, c2, _ = st.columns([1, 1, 6])
+    if c1.button("👍", key=f"up_{index}", help="Helpful"):
+        voted[index] = "up"
+        guardrails.audit("feedback", error="up")
+        st.rerun()
+    if c2.button("👎", key=f"down_{index}", help="Not helpful"):
+        voted[index] = "down"
+        guardrails.audit("feedback", error="down")
+        st.rerun()
 
 
 def chat_panel(df, patterns) -> None:
     """Chat on the landing page. History lasts for the browser session or until cleared.
     Each card is rendered once and stored, so reruns do not call the model again."""
     st.subheader("Ask CaseLens")
-    st.caption("e.g. 'summary of CS-2026-1001' or 'what is LTV?'")
+    st.markdown(
+        '<div class="cl-chat-intro"><strong>Try asking:</strong><ul>'
+        "<li>summary of CS-2026-1001</li>"
+        "<li>what is LTV?</li>"
+        "<li>which case took the longest?</li>"
+        "<li>why is CS-2026-1001 stalled?</li>"
+        "<li>what documents are needed for a personal loan?</li>"
+        "</ul></div>",
+        unsafe_allow_html=True,
+    )
     history = st.session_state.setdefault("chat", [])
 
     if st.button("Clear chat"):
         st.session_state["chat"] = []
         st.rerun()
 
-    box = st.container(height=440)
+    box = st.container(height=440, key="chat_box")
     with box:
         for msg in history:
             with st.chat_message(msg["role"]):
@@ -338,6 +552,8 @@ def chat_panel(df, patterns) -> None:
                         st.code(msg["content"], language=None, wrap_lines=True)
                     else:
                         st.markdown(msg["content"])
+                if msg["role"] == "assistant" and msg.get("content"):
+                    feedback_buttons(history.index(msg))
 
     question = box.chat_input("Ask about a case or a jargon term")
     if not question:
@@ -361,15 +577,100 @@ def chat_panel(df, patterns) -> None:
     st.rerun()
 
 
+def audit_page() -> None:
+    """Audit view: every logged event, with latency and tokens. Read-only, from logs/audit.jsonl."""
+    st.header("Audit view")
+    st.caption("Every model call and guardrail event is logged here. Raw questions and keys are never stored.")
+    log = audit_view.load_log()
+    if log.empty:
+        st.info("No audit events yet. Ask a question in the chat or run a summary to create events.")
+        return
+
+    head = audit_view.summary(log)
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Events", head["events"])
+    c2.metric("Model calls", head["model_calls"])
+    c3.metric("Avg latency (ms)", "n/a" if head["avg_latency_ms"] is None else f"{head['avg_latency_ms']:.0f}")
+    c4.metric("Total tokens", "n/a" if head["total_tokens"] is None else f"{head['total_tokens']:,}")
+    price = summary.get_price_per_1k()
+    model_rows = audit_view.model_events(log)
+    per_call = audit_view.cost_per_call(model_rows, price).dropna()
+    if price <= 0:
+        st.caption("Cost: set OPENROUTER_PRICE_PER_1K_TOKENS in .env to show cost per call and per summary.")
+    elif per_call.empty:
+        st.caption("Cost: no token counts logged yet.")
+    else:
+        cc1, cc2 = st.columns(2)
+        cc1.metric("Cost per model call (USD)", f"${per_call.mean():.4f}")
+        cc2.metric("Total estimated cost (USD)", f"${per_call.sum():.2f}")
+        st.subheader("Cost by summary")
+        st.caption("Each row is one summary card. Its cost is the sum of every model call tagged with its summary ID.")
+        st.dataframe(audit_view.cost_by_summary(log, price), hide_index=True)
+        st.subheader("Cost by case")
+        st.dataframe(audit_view.cost_by_case(log, price), hide_index=True)
+    c5, c6, c7, c8 = st.columns(4)
+    c5.metric("p95 latency (ms)", "n/a" if head["p95_latency_ms"] is None else f"{head['p95_latency_ms']:.0f}")
+    c6.metric("Avg tokens per call", "n/a" if head["avg_tokens_per_call"] is None else f"{head['avg_tokens_per_call']:.0f}")
+    c7.metric("Real errors", head["errors"], help="Model or system failures. Guardrail blocks are counted separately.")
+    c8.metric("Guardrail blocks", head["blocked"], help="Questions stopped before a model call, for example PII requests.")
+    st.caption(f"Lines dropped by the citation check: {head['dropped_lines']}.")
+
+    st.subheader("By event type")
+    st.dataframe(audit_view.by_kind(log), hide_index=True)
+
+    st.subheader("Prompt version comparison")
+    st.caption("Latency, tokens, and dropped lines per prompt version. Use this to compare prompt changes.")
+    st.dataframe(audit_view.by_prompt_version(log), hide_index=True)
+
+    st.subheader("Human feedback")
+    fb = audit_view.feedback_summary(log)
+    if fb["total"] == 0:
+        st.info("No feedback yet. Thumbs up or down under a chat answer to record it.")
+    else:
+        share = "n/a" if fb["helpful_share"] is None else f"{fb['helpful_share']:.0%}"
+        f1, f2, f3 = st.columns(3)
+        f1.metric("Helpful (👍)", fb["up"])
+        f2.metric("Not helpful (👎)", fb["down"])
+        f3.metric("Helpful share", share)
+
+    st.subheader("Events")
+    kinds = sorted(k for k in log["kind"].dropna().unique())
+    models = sorted(m for m in log["model"].dropna().unique() if m)
+    f1, f2 = st.columns(2)
+    sel_kind = f1.multiselect("Event type", kinds, key="audit_kind")
+    sel_model = f2.multiselect("Model", models, key="audit_model")
+    filtered = audit_view.filter_log(log, kinds=sel_kind, models=sel_model)
+    st.caption(f"{len(filtered)} event(s) shown. Blank latency or tokens mean no model call was made.")
+    st.dataframe(filtered, hide_index=True)
+    st.download_button("Download audit events (CSV)", data=export_extra.table_csv(filtered),
+                       file_name="caselens_audit.csv", mime=export_extra.CSV_MIME, key="dl_audit")
+
+
+def scorecard_page(df, patterns) -> None:
+    """Evaluation scorecard: each judged target measured against live data."""
+    st.header("Evaluation scorecard")
+    st.caption("Measured on the current data. Template checks run offline. Latency and tokens come from the audit log.")
+    log = audit_view.load_log()
+    board = scorecard.build(df, patterns, log, get_entries())
+    st.dataframe(board, hide_index=True)
+    st.caption("A target marked 'not measured' has no data yet, so it is not a pass.")
+
+
 def landing(df, patterns) -> None:
     st.header("Choose an option")
     st.caption("Pick a view to start. Cases and jargon are read from the CSV and dictionary.")
-    c1, c2 = st.columns(2)
+    c1, c2, c3, c4 = st.columns(4)
     if c1.button("🔍 Single Case Summarization", use_container_width=True, type="primary"):
         st.session_state["mode"] = "single"
         st.rerun()
     if c2.button("📊 Bulk Case Summarization", use_container_width=True, type="primary"):
         st.session_state["mode"] = "bulk"
+        st.rerun()
+    if c3.button("🧾 Audit view", use_container_width=True, type="primary"):
+        st.session_state["mode"] = "audit"
+        st.rerun()
+    if c4.button("Evaluation scorecard", use_container_width=True, type="primary"):
+        st.session_state["mode"] = "scorecard"
         st.rerun()
 
 
@@ -389,13 +690,17 @@ def main() -> None:
                     st.rerun()
         st.markdown(
             '<div class="cl-hero"><h1>CaseLens</h1>'
-            "<p>Plain-English case intelligence for BPM operations</p></div>",
+            "<p>Ask questions about BPM cases and business terms, in plain English</p></div>",
             unsafe_allow_html=True,
         )
         if mode == "single":
             single_case_page(df, patterns)
         elif mode == "bulk":
             batch_page(df, patterns)
+        elif mode == "audit":
+            audit_page()
+        elif mode == "scorecard":
+            scorecard_page(df, patterns)
         else:
             landing(df, patterns)
     with right:

@@ -35,17 +35,32 @@ def compute_figures(df: pd.DataFrame, patterns) -> dict:
     )
     bn = bottleneck_per_case(df)
     stage_counts = bn.groupby("Stage").size()
-    top_stage = int(stage_counts.idxmax())
-    top_share = stage_counts.max() / len(bn) * 100
-    slowest_type = by_type.sort_values("TAT", ascending=False).iloc[0]
+    if stage_counts.empty:
+        # Cases with no completed stage yet (for example, open cases at Stage 1) have no stage durations.
+        top_text = "No completed stage durations are recorded for these cases."
+    else:
+        top_stage = int(stage_counts.idxmax())
+        top_share = stage_counts.max() / len(bn) * 100
+        top_text = (f"Stage {top_stage} ({summary.STAGE_NAMES[top_stage]}) is the longest stage "
+                    f"in {top_share:.0f}% of cases.")
+    turnaround = tat.dropna()
+    if turnaround.empty:
+        avg_text = "No turnaround is recorded yet, because these cases are still open."
+    else:
+        avg_text = f"Average turnaround across cases with a final TAT is {turnaround.mean():.1f} hours."
+    by_type_tat = by_type.dropna(subset=["TAT"])
+    if by_type_tat.empty:
+        slowest_text = "No type-level turnaround is available for these cases."
+    else:
+        slowest_type = by_type_tat.sort_values("TAT", ascending=False).iloc[0]
+        slowest_text = (f"{slowest_type['Type'].replace('_', ' ')} has the highest average turnaround "
+                        f"at {slowest_type['TAT']:.1f} hours.")
 
     figs = {
         "T1": f"{total} cases analysed, {n_stalled} with a recorded stall ({n_stalled / total:.0%}).",
-        "T2": f"Average turnaround across all cases is {tat.mean():.1f} hours.",
-        "T3": (f"Stage {top_stage} ({summary.STAGE_NAMES[top_stage]}) is the longest stage "
-               f"in {top_share:.0f}% of cases."),
-        "T4": (f"{slowest_type['Type'].replace('_', ' ')} has the highest average turnaround "
-               f"at {slowest_type['TAT']:.1f} hours."),
+        "T2": avg_text,
+        "T3": top_text,
+        "T4": slowest_text,
     }
     for _, row in by_type.iterrows():
         pct = row["Stalled"] / row["Cases"] * 100
