@@ -44,6 +44,25 @@ def test_feedback_counts_and_share():
     assert fb["helpful_share"] == 0.5
 
 
+def test_cache_hits_and_tokens_saved_are_counted():
+    summary_call = {"ts": pd.Timestamp("2026-10-01", tz="UTC"), "kind": "summary", "model": "m",
+                    "prompt_version": "v2", "case_ids": ["CS-2026-1001"], "citations": [], "dropped_lines": 0,
+                    "error": "", "latency_ms": 1000.0, "total_tokens": 1000}
+    hit = {"ts": pd.Timestamp("2026-10-02", tz="UTC"), "kind": "summary_cache_hit", "model": "m",
+           "prompt_version": "v2", "case_ids": ["CS-2026-1001"], "citations": [], "dropped_lines": 0,
+           "error": "", "latency_ms": None, "total_tokens": None}
+    log = pd.DataFrame([summary_call, hit])
+    head = av.summary(log)
+    assert head["cache_hits"] == 1
+    assert head["tokens_saved"] == 1000  # one hit, saving the 1,000-token summary call
+
+
+def test_no_cache_hits_means_zero_saved():
+    head = av.summary(_log())
+    assert head["cache_hits"] == 0
+    assert head["tokens_saved"] == 0
+
+
 def test_feedback_is_empty_when_no_votes():
     fb = av.feedback_summary(_log().iloc[:2])
     assert fb["total"] == 0 and fb["helpful_share"] is None

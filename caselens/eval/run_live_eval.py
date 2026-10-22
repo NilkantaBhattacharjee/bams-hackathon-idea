@@ -3,6 +3,7 @@
 Writes eval/live_results.md. Each check is PASS, REVIEW (a person should read it), FAIL, or ERROR.
 """
 
+import re
 import sys
 from datetime import date
 from pathlib import Path
@@ -41,6 +42,9 @@ QUESTIONS = [
 
 def judge(expect: str, text: str) -> str:
     low = (text or "").lower()
+    # A broken value in any answer is a failure, whatever the answer type.
+    if re.search(r"\b(nan|none|nat)\b", low):
+        return "FAIL"
     if expect == "term":
         return "PASS" if "[JD-" in text else "REVIEW"
     if expect == "case":
@@ -92,6 +96,9 @@ def run_chat(df, patterns, entries) -> list[dict]:
         try:
             reply = chat.answer(question, df, patterns, entries, history=[])
             text = reply["text"]
+            if reply.get("kind") == "cases" and not text.strip():
+                # A case-card reply has no text of its own; report the cards it returns.
+                text = "Case card returned for " + ", ".join(reply.get("case_ids", []))
             rows.append({"label": label, "question": question,
                          "check": judge(expect, text), "answer": text})
         except Exception as exc:

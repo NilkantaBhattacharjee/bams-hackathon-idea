@@ -38,7 +38,7 @@ CASE_ID = re.compile(r"\bCS-\d{4}-\d{4}\b", re.IGNORECASE)
 CASE_NUM = re.compile(r"\bcase\s*#?\s*(\d{3,4})\b", re.IGNORECASE)
 BARE_NUM = re.compile(r"\b\d{3,4}\b")
 STATUS_Q = re.compile(r"\b(stage|closed|open|status|still|currently|current)\b", re.IGNORECASE)
-SUMMARY_WORDS = re.compile(r"\b(summary|summarise|summarize|details?|status)\b", re.IGNORECASE)
+SUMMARY_WORDS = re.compile(r"\b(summary|summarise|summarize|details?|status|happened|happening)\b", re.IGNORECASE)
 QUESTION_WORDS = re.compile(
     r"\b(what|why|when|who|how|which|is|was|were|did|does|has|have|happened|stalled|reason)\b",
     re.IGNORECASE,

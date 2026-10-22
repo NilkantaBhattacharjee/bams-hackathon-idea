@@ -466,7 +466,12 @@ def answer_facts(question: str, cid: str, df, patterns) -> str | None:
         parts.append(f"SLA target: {sla} days." if sla is not None else "No SLA is recorded for this case.")
     # A specific stage asked about is answered first, before the general stage and status lines.
     if TIME_Q.search(q):
-        if stage_match and stage_match > 1:
+        if stage_match and stage_match > 1 and pd.isna(df[df["Case_ID"] == cid].iloc[0][f"Stage_{stage_match}_Timestamp"]):
+            parts.append(
+                f"Stage {stage_match} ({summary.STAGE_NAMES[stage_match]}) has not been reached yet, "
+                f"so no time to reach it is recorded."
+            )
+        elif stage_match and stage_match > 1:
             parts.append(
                 f"Time to reach Stage {stage_match} ({summary.STAGE_NAMES[stage_match]}): "
                 f"{hours_text(stage_entry_hours(df, cid, stage_match))} from case creation."

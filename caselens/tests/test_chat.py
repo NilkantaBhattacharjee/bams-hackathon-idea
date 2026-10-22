@@ -90,20 +90,12 @@ def test_jargon_question_uses_model_when_key_present(df, patterns, entries, monk
     assert reply["text"] == "LTV is the loan-to-value ratio [JD-007]."
 
 
-def test_case_question_includes_case_record(df, patterns, entries, monkeypatch):
-    captured = []
+def test_case_question_returns_case_card(df, patterns, entries, monkeypatch):
+    # 'what happened in <case>' is a summary request: it returns the case card, not a model call.
     monkeypatch.setattr(summary, "get_settings", lambda: ("fake", "m"))
-
-    def fake(messages, key, model):
-        captured.append(messages)
-        return "CS-2026-1047 is a Mortgage Refinance case [CASE CS-2026-1047]."
-
-    monkeypatch.setattr(chat, "call_chat", fake)
     reply = chat.answer("what happened in CS-2026-1047", df, patterns, entries)
-    sent = captured[0][-1]["content"]
-    assert "[CASE CS-2026-1047] Type: Retail_Banking; sub-type: Mortgage_Refinance" in sent
-    assert "[CASE CS-2026-1047 S3]" in sent
-    assert "[CASE CS-2026-1047]" in reply["text"]
+    assert reply["kind"] == "cases"
+    assert reply["case_ids"] == ["CS-2026-1047"]
 
 
 def test_mortgage_refinance_term_is_in_dictionary(entries):

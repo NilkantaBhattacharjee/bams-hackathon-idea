@@ -552,7 +552,7 @@ def chat_panel(df, patterns) -> None:
                         st.code(msg["content"], language=None, wrap_lines=True)
                     else:
                         st.markdown(msg["content"])
-                if msg["role"] == "assistant" and msg.get("content"):
+                if msg["role"] == "assistant" and (msg.get("content") or msg.get("cards")):
                     feedback_buttons(history.index(msg))
 
     question = box.chat_input("Ask about a case or a jargon term")
@@ -608,6 +608,12 @@ def audit_page() -> None:
         st.dataframe(audit_view.cost_by_summary(log, price), hide_index=True)
         st.subheader("Cost by case")
         st.dataframe(audit_view.cost_by_case(log, price), hide_index=True)
+    h1, h2 = st.columns(2)
+    h1.metric("Summary cache hits", head["cache_hits"],
+              help="Summaries served from cache. No model call was made for these.")
+    h2.metric("Tokens saved (est.)",
+              "n/a" if head["tokens_saved"] is None else f"{head['tokens_saved']:,}",
+              help="Each cache hit is estimated at the average tokens of a logged summary call.")
     c5, c6, c7, c8 = st.columns(4)
     c5.metric("p95 latency (ms)", "n/a" if head["p95_latency_ms"] is None else f"{head['p95_latency_ms']:.0f}")
     c6.metric("Avg tokens per call", "n/a" if head["avg_tokens_per_call"] is None else f"{head['avg_tokens_per_call']:.0f}")
@@ -646,31 +652,60 @@ def audit_page() -> None:
                        file_name="caselens_audit.csv", mime=export_extra.CSV_MIME, key="dl_audit")
 
 
+def _audit_log_key() -> str:
+    """Changes whenever the audit log changes, so the cached scorecard is refreshed after new events."""
+    path = guardrails.LOG_PATH
+    if not path.exists():
+        return "no-log"
+    stat = path.stat()
+    return f"{stat.st_mtime_ns}-{stat.st_size}"
+
+
+@st.cache_data(show_spinner=False)
+def _scorecard_board(log_key: str, _df, _patterns, _entries):
+    """Runs the scorecard checks. Cached by log_key; the underscored arguments are not hashed."""
+    return scorecard.build(_df, _patterns, audit_view.load_log(), _entries)
+
+
 def scorecard_page(df, patterns) -> None:
-    """Evaluation scorecard: each judged target measured against live data."""
+    """Evaluation scorecard. The checks run only on request and are cached until the audit log changes."""
     st.header("Evaluation scorecard")
     st.caption("Measured on the current data. Template checks run offline. Latency and tokens come from the audit log.")
-    log = audit_view.load_log()
-    board = scorecard.build(df, patterns, log, get_entries())
+    if st.button("Run scorecard", type="primary"):
+        st.session_state["scorecard_requested"] = True
+    if not st.session_state.get("scorecard_requested"):
+        st.info("Press Run scorecard. The checks ask the chat 30 invented-term questions and summarise all 500 cases, "
+                "so the first run takes a few minutes. The result is kept until the audit log changes.")
+        return
+    with st.spinner("Running checks..."):
+        board = _scorecard_board(_audit_log_key(), df, patterns, get_entries())
     st.dataframe(board, hide_index=True)
     st.caption("A target marked 'not measured' has no data yet, so it is not a pass.")
+
+
+def nav_bar() -> None:
+    """Home, Audit view, and Evaluation scorecard in one row. Each sets the page mode on the same page."""
+    c1, c2, c3 = st.columns(3)
+    if c1.button("🏠 Home", use_container_width=True, type="primary", key="nav_home"):
+        st.session_state["mode"] = None
+        st.rerun()
+    if c2.button("🧾 Audit view", use_container_width=True, type="primary", key="nav_audit"):
+        st.session_state["mode"] = "audit"
+        st.rerun()
+    if c3.button("✅ Evaluation scorecard", use_container_width=True, type="primary", key="nav_scorecard"):
+        st.session_state["mode"] = "scorecard"
+        st.rerun()
 
 
 def landing(df, patterns) -> None:
     st.header("Choose an option")
     st.caption("Pick a view to start. Cases and jargon are read from the CSV and dictionary.")
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2 = st.columns(2)
     if c1.button("🔍 Single Case Summarization", use_container_width=True, type="primary"):
         st.session_state["mode"] = "single"
         st.rerun()
     if c2.button("📊 Bulk Case Summarization", use_container_width=True, type="primary"):
         st.session_state["mode"] = "bulk"
-        st.rerun()
-    if c3.button("🧾 Audit view", use_container_width=True, type="primary"):
-        st.session_state["mode"] = "audit"
-        st.rerun()
-    if c4.button("Evaluation scorecard", use_container_width=True, type="primary"):
-        st.session_state["mode"] = "scorecard"
         st.rerun()
 
 
@@ -681,26 +716,36 @@ def main() -> None:
     patterns = get_patterns()
     mode = st.session_state.get("mode")
 
+    if mode in ("audit", "scorecard"):
+        # Full-width views: same page, no chat.
+        st.markdown('<div class="cl-hero"><h1>CaseLens</h1>'
+                    "<p>Ask questions about BPM cases and business terms, in plain English</p></div>",
+                    unsafe_allow_html=True)
+        nav_bar()
+        if mode == "audit":
+            audit_page()
+        else:
+            scorecard_page(df, patterns)
+        return
+
     left, right = st.columns([2, 1.3], gap="medium")
     with left:
-        if mode:
-            with st.container(key="home_btn"):
-                if st.button("⬅ Home", type="primary"):
-                    st.session_state["mode"] = None
-                    st.rerun()
         st.markdown(
             '<div class="cl-hero"><h1>CaseLens</h1>'
             "<p>Ask questions about BPM cases and business terms, in plain English</p></div>",
             unsafe_allow_html=True,
         )
+        nav_bar()
         if mode == "single":
+            if st.button("⬅ Back", type="primary"):
+                st.session_state["mode"] = None
+                st.rerun()
             single_case_page(df, patterns)
         elif mode == "bulk":
+            if st.button("⬅ Back", type="primary"):
+                st.session_state["mode"] = None
+                st.rerun()
             batch_page(df, patterns)
-        elif mode == "audit":
-            audit_page()
-        elif mode == "scorecard":
-            scorecard_page(df, patterns)
         else:
             landing(df, patterns)
     with right:

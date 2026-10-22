@@ -50,6 +50,16 @@ def model_events(df: pd.DataFrame) -> pd.DataFrame:
     return df[df["model"].fillna("") != ""]
 
 
+def _tokens_saved(df: pd.DataFrame) -> int | None:
+    """Estimated tokens not sent because a summary came from cache: each hit saves the average
+    tokens of a logged summary call. None when there are no summary calls to average from."""
+    hits = int((df["kind"].fillna("") == "summary_cache_hit").sum())
+    calls = df[df["kind"].fillna("") == "summary"]["total_tokens"].dropna()
+    if hits == 0 or calls.empty:
+        return 0 if hits == 0 else None
+    return int(round(hits * float(calls.mean())))
+
+
 def summary(df: pd.DataFrame) -> dict:
     """Headline numbers for the page. Averages use only events with a measured latency or token count."""
     model = model_events(df)
@@ -62,6 +72,8 @@ def summary(df: pd.DataFrame) -> dict:
         "model_calls": len(model),
         "errors": int(error_mask.sum()),
         "blocked": int(blocked_mask.sum()),
+        "cache_hits": int((df["kind"].fillna("") == "summary_cache_hit").sum()),
+        "tokens_saved": _tokens_saved(df),
         "dropped_lines": int(df["dropped_lines"].sum()),
         "avg_latency_ms": round(float(lat.mean()), 0) if len(lat) else None,
         "p95_latency_ms": round(float(lat.quantile(0.95)), 0) if len(lat) else None,

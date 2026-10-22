@@ -7,7 +7,7 @@
 ## Problem
 
 - Case comments are dense, abbreviated, and spread across five stages.
-- Reconstructing why a case is open or stalled takes 10 to 20 minutes per case.
+- Reconstructing why a case is open or stalled is slow. In a timed trial of 20 cases, the manual way took about 20 minutes in total (about 1 minute per case).
 - Managers and auditors ask for trends, and the answers come from manual reading, not data.
 - Shift handovers lose context when a case changes hands.
 
@@ -30,7 +30,7 @@ These are the targets the scorecard checks. Figures are from the scorecard run o
 | Invented terms refused or not defined | 100% | 100% (30 of 30) |
 | Raw client IDs in outgoing output | 0 | 0 |
 | p95 latency per model call | under 5 s | 2.5 s (178 calls) |
-| Cases read per summary | n/a | Stage timeline on each card, no manual reading |
+| Time to review a case, 20-case timed trial | 40% or less of manual time (proposed target) | 35 to 40% of manual time: 7 to 8 min with CaseLens vs 20 min manual, about 0.4 min vs 1 min per case (60 to 65% faster) |
 
 ## Out of scope
 

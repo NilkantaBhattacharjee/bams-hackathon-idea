@@ -361,6 +361,15 @@ def _overlaps_cited_entries(line: str, cites: list[str], sources: dict[str, str]
     return True
 
 
+SUMMARY_CACHE: dict[str, dict] = {}  # cache key -> kept lines; in memory, cleared when the app restarts
+
+
+def _cache_key(prompt: str, system: str, model: str) -> str:
+    """Changes whenever the case facts, the prompt wording, or the model change, so a stale summary is never reused."""
+    import hashlib
+    return hashlib.sha256(f"{model}\n{system}\n{prompt}".encode("utf-8")).hexdigest()
+
+
 def summarize_case(case_id, df=None, patterns=None, use_llm=True) -> dict:
     df = load_cases(CASES_CSV) if df is None else df
     patterns = build_patterns(load_entries(JARGON_JSON)) if patterns is None else patterns
@@ -374,10 +383,20 @@ def summarize_case(case_id, df=None, patterns=None, use_llm=True) -> dict:
     else:
         try:
             system = SYSTEM_PROMPT + CURRENT_STATE_RULE + (CLOSED_RULE if f["closed"] else "")
-            raw = call_llm_with_retry(build_prompt(f), key, model, system=system)
+            prompt = build_prompt(f)
+            ckey = _cache_key(prompt, system, model)
+            import guardrails
+            if ckey in SUMMARY_CACHE:
+                # Served from cache: no model call, no tokens. Logged so the Audit view shows the saving.
+                guardrails.audit("summary_cache_hit", case_ids=[f["case_id"]], model=model,
+                                 summary_id=uuid.uuid4().hex[:12])
+                kept = list(SUMMARY_CACHE[ckey]["lines"])
+                dropped = SUMMARY_CACHE[ckey]["dropped"]
+                return {"mode": "llm", "model": model, "lines": kept, "dropped": dropped, "error": "",
+                        "cached": True}
+            raw = call_llm_with_retry(prompt, key, model, system=system)
             call = dict(LAST_CALL)
             kept, dropped = keep_cited(raw, allowed_sources(f))
-            import guardrails
             guardrails.audit("summary", case_ids=[f["case_id"]], model=model,
                              citations=CITATION.findall("\n".join(kept)), dropped=dropped,
                              latency_ms=call.get("latency_ms"), tokens=call.get("tokens"),
@@ -387,7 +406,9 @@ def summarize_case(case_id, df=None, patterns=None, use_llm=True) -> dict:
                 kept = drop_open_language(kept)
                 dropped += before - len(kept)
             if kept:
-                return {"mode": "llm", "model": model, "lines": kept, "dropped": dropped, "error": ""}
+                SUMMARY_CACHE[ckey] = {"lines": list(kept), "dropped": dropped}
+                return {"mode": "llm", "model": model, "lines": kept, "dropped": dropped, "error": "",
+                        "cached": False}
             error = "LLM output had no valid cited lines"
         except Exception as exc:  # report the error type only, never the key or the request
             error = f"LLM call failed: {type(exc).__name__}"
