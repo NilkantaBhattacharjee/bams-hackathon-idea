@@ -32,7 +32,16 @@ Logged runs include test runs. Production usage will differ.
 - Template answers (no model call) cost nothing, and the offline scorecard makes no model calls.
 - The model is called only for summaries and free-form chat questions, not for every click.
 
+## Scalability
+
+- **Data:** the prototype reads a CSV of 500 synthetic cases. In a bank, the same queries would run against the BPM database through a read-only connection. The metric code does not change.
+- **Model calls:** each summary is one model call, so cost grows with the number of summaries requested, not with the number of cases in the system.
+- **Repeat cost:** the summary cache returns a saved answer for an unchanged case, so repeat views cost nothing. A changed case or prompt is re-summarised.
+- **Sizing:** at about $0.0005 per summary, 1,000 summaries a day is about $0.50 a day in model cost, before infrastructure.
+- **Infrastructure:** the prototype runs locally. A deployment would need hosting for the app, a secure store for the key, and the audit log moved to a managed store. These costs are not estimated here.
+
 ## Gaps
 
 - Input and output tokens are logged as one total, so the estimate is approximate.
 - The price comes from the model page on one date and may change.
+- Infrastructure and hosting costs are not estimated.

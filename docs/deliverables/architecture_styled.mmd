@@ -1,0 +1,57 @@
+flowchart TB
+    subgraph B1["1. DATA INGESTION AND USER INTERFACE"]
+        direction LR
+        REQ["User requests<br/>Summarise case CS-2026-1001<br/>Trends for a chosen period"]
+        QIN["User query input<br/>chat panel"]
+        CSV[("Financial case data CSV<br/>case type, sub-type, 5 stages<br/>comments, timestamps, documents")]
+        UI["Application user interface<br/>Streamlit web app"]
+    end
+
+    subgraph B2["2. PROCESSING AND RAG PIPELINE"]
+        direction LR
+        LEX[("Company lexicon and dictionary<br/>KYC, AML, STP, SAR, LTV, DTI<br/>entries with IDs JD-###")]
+        RAG["RAG mechanism<br/>term lookup and retrieval"]
+        PII["PII masking and redaction<br/>before any model call"]
+        ROUTER["Question router<br/>rule-based, no model choice"]
+        METRICS["Computed figures<br/>stage durations, TAT, stalls,<br/>open and closed counts"]
+        LLM["LLM explainer<br/>openai/gpt-4o-mini via OpenRouter<br/>explains computed facts only"]
+        CHECK["Citation check<br/>drops any line without a source"]
+    end
+
+    subgraph B3["3. OUTPUT AND DELIVERY"]
+        direction LR
+        OUT["Case summaries and trend report<br/>individual cards and bulk view"]
+        DISP["User output on screen<br/>charts, cards, Excel and PDF export"]
+        LOG["Audit log and scorecard<br/>counts and hashes only<br/>thumbs up and down feedback"]
+    end
+
+    REQ --> QIN
+    QIN --> ROUTER
+    UI --> QIN
+    CSV --> METRICS
+    CSV --> PII
+    LEX --> RAG
+    RAG --> ROUTER
+    METRICS --> ROUTER
+    ROUTER --> PII
+    PII --> LLM
+    LLM --> CHECK
+    CHECK --> OUT
+    ROUTER -. "exact answers, no model call" .-> OUT
+    METRICS --> OUT
+    OUT --> DISP
+    DISP --> UI
+    OUT --> LOG
+    DISP -. "feedback" .-> LOG
+
+    style B1 fill:#e4f1fb,stroke:#8fb8cc,stroke-width:1px
+    style B2 fill:#e5f6f2,stroke:#8fc9bd,stroke-width:1px
+    style B3 fill:#fdf1e7,stroke:#e0b98f,stroke-width:1px
+
+    classDef box fill:#bfe9e4,stroke:#2a9d8f,stroke-width:2px,color:#1d3b3a
+    classDef store fill:#d7f0ff,stroke:#4a8fb5,stroke-width:2px,color:#1d3b3a
+    classDef model fill:#2a9d8f,stroke:#1d6f66,stroke-width:2px,color:#ffffff
+
+    class REQ,QIN,UI,RAG,PII,ROUTER,METRICS,CHECK,OUT,DISP,LOG box
+    class CSV,LEX store
+    class LLM model

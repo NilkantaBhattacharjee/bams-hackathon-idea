@@ -6115,3 +6115,8 @@
 21:33:39 | INFO  | model        calling openai/gpt-4o-mini (prompt version chat-v2)
 21:33:42 | INFO  | citations    kept=1 dropped=0 (every kept line cites a valid source)
 21:33:42 | INFO  | route        q#ca35b917 len=12 -> text cases=[]
+22:16:52 | INFO  | route        q#2638c275 len=28 -> text cases=[]
+22:18:14 | INFO  | route        q#66ba7a6e len=31 -> text cases=[]
+22:18:32 | INFO  | route        q#adc4b671 len=48 -> text cases=[]
+22:18:54 | INFO  | route        q#b887b5f3 len=42 -> text cases=[]
+22:19:21 | INFO  | route        q#e4f47553 len=34 -> text cases=[]

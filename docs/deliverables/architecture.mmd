@@ -1,0 +1,35 @@
+﻿flowchart LR
+    User["Shift lead / manager / auditor"] --> UI["Streamlit UI<br/>app.py"]
+
+    UI --> Chat["chat.py<br/>question router"]
+    UI --> Single["Single case view<br/>summary.py, case_facts.py"]
+    UI --> Bulk["Bulk view<br/>trends.py, sla.py, export.py"]
+    UI --> Audit["Audit view<br/>audit_view.py"]
+    UI --> Score["Evaluation scorecard<br/>scorecard.py"]
+
+    Chat --> Facts["case_facts.py<br/>exact answers from data"]
+    Chat --> Glossary["jargon.py + semantic.py<br/>dictionary lookup, local embeddings"]
+    Chat --> Stats["stats.py / trends.py<br/>computed figures"]
+    Single --> Facts
+    Bulk --> Facts
+
+    Facts --> Metrics["metrics.py<br/>stage durations, TAT"]
+    Metrics --> CSV[("Case CSV<br/>500 synthetic cases")]
+    Glossary --> Dict[("Jargon dictionary<br/>JSON")]
+
+    Chat -- "only for free-form questions" --> Guard["guardrails.py<br/>PII mask, injection scan, output check"]
+    Single -- "summary, optional" --> Guard
+    Bulk -- "narrative, optional" --> Guard
+    Guard --> Model["OpenRouter model<br/>openai/gpt-4o-mini"]
+    Model --> Cite["Citation check<br/>keep_cited: drop uncited lines"]
+    Cite --> UI
+
+    Summary["summary cache<br/>in memory"] -. "repeat summary" .-> Single
+    Guard --> Log[("Audit log<br/>logs/audit.jsonl<br/>hashes and counts only")]
+    Chat --> Log
+    Single --> Log
+    UI -- "thumbs up / down" --> Log
+    Log --> Audit
+    Log --> Score
+    Score --> Facts
+
